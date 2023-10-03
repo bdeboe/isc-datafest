@@ -17,7 +17,7 @@ USER ${ISC_PACKAGE_MGRUSER}
 
 COPY iris.script iris.script
 COPY requirements.txt requirements.txt
-COPY data/taxi/ /opt/irisbuild/data/taxi/
+COPY data/ /opt/irisbuild/data/
 
 RUN iris start IRIS && \
     iris session IRIS < iris.script && \
