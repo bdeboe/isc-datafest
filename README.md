@@ -35,13 +35,13 @@ To log in to the container, use `docker exec -it <container-name> bash`, or use 
 
 Shortcut:
 ```ObjectScript
-do ##class(bdb.sql.InferSchema).CreateForeignTables("/opt/irisbuild/data/", { "verbose":1, "targetSchema":"demo_files" })
+do ##class(bdb.sql.InferSchema).CreateForeignTables("/opt/irisbuild/data/*.csv", { "verbose":1, "targetSchema":"demo_files" })
 ```
 
 or 
 
 ```SQL
-CALL bdb_sql.CreateForeignTables('/opt/irisbuild/data/', '{ "verbose":1, "targetSchema":"demo_files" }')
+CALL bdb_sql.CreateForeignTables('/opt/irisbuild/data/*.csv', '{ "verbose":1, "targetSchema":"demo_files" }')
 ```
 
 ### Working with dbt
