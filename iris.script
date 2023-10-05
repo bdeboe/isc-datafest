@@ -1,5 +1,9 @@
 zn "%SYS"
 do ##class(Security.Users).UnExpireUserPasswords("*")
+w ##class(Config.MapPackages).Delete("USER","Ens")
+w ##class(Config.MapPackages).Delete("USER","EnsLib")
+w ##class(Config.MapPackages).Delete("USER","EnsPortal")
+w ##class(Config.MapPackages).Delete("USER","CSPX.Dashboard")
 zn "USER"
 zpm "install bdb-sql-utils"
 halt
