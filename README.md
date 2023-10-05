@@ -81,9 +81,9 @@ TRAIN MODEL walmart;
 ```SQL
 SET ML CONFIGURATION %AutoML;
 
-CREATE TIME SERIES MODEL delhi PREDICTING (*) BY (obsdate) FROM demo_files.delhi USING {"forward": 10 };
+CREATE TIME SERIES MODEL delhi PREDICTING (*) BY (obsdate) FROM demo_files.delhi USING {"Forward": 10 };
 
 TRAIN MODEL delhi;
 
-SELECT WITH PREDICTIONS (delhi) * FROM (SELECT TOP 10 %ID, * FROM demo_files.delhi);
+SELECT WITH PREDICTIONS (delhi) * FROM (SELECT TOP 100 %ID, * FROM demo_files.delhi);
 ```
