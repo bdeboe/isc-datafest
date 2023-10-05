@@ -1,0 +1,12 @@
+datafest:
+  outputs:
+    iris:
+      type: iris
+      threads: 1
+      hostname: localhost
+      port: 1972
+      username: _SYSTEM
+      password: SYS
+      namespace: USER
+      schema: dbt
+  target: iris

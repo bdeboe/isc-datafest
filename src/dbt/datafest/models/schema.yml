@@ -1,0 +1,6 @@
+
+version: 2
+
+models:
+  - name: redo_delhi
+    description: "basic tidying up of delhi dataset"
