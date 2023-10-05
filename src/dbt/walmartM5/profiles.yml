@@ -1,0 +1,12 @@
+isc-datafest:
+  target: dev
+  outputs:
+    dev:
+      type: iris
+      host: localhost
+      port: 41773
+      user: fhir
+      pass: fhir
+      namespace: FHIRSERVER
+      schema: mlonfhir
+      threads: 10
