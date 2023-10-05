@@ -5,8 +5,8 @@ isc-datafest:
       type: iris
       host: localhost
       port: 41773
-      user: fhir
-      pass: fhir
-      namespace: FHIRSERVER
-      schema: mlonfhir
+      user: _SYSTEM
+      pass: SYS
+      namespace: USER
+      schema: demo_files
       threads: 10
