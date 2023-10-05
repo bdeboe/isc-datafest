@@ -1,0 +1,7 @@
+version: 2
+
+sources:
+  - name: walmartM5
+    schema: demo_files
+    tables:
+      - name: walmart
