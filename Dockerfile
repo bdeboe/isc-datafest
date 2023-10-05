@@ -4,27 +4,31 @@ FROM ${IMAGE}
 
 USER root
 
-# ENV PIP_TARGET=${ISC_PACKAGE_INSTALLDIR}/mgr/python
-
 WORKDIR /opt/irisbuild
 
-RUN mkdir /opt/irisbuild/data/ && \
-  chown ${ISC_PACKAGE_MGRUSER}:${ISC_PACKAGE_IRISGROUP} /opt/irisbuild && \
-  chown ${ISC_PACKAGE_MGRUSER}:${ISC_PACKAGE_IRISGROUP} /opt/irisbuild/data  && \
-  python3 -m pip install --upgrade pip 
+RUN python3 -m pip install --upgrade pip 
 
 USER ${ISC_PACKAGE_MGRUSER}
 
-COPY iris.script iris.script
-COPY requirements.txt requirements.txt
+# stage data
 COPY data/ /opt/irisbuild/data/
 
+# IRIS setup
+COPY iris.script iris.script
 RUN iris start IRIS && \
     iris session IRIS < iris.script && \
-    iris stop IRIS quietly && \
-    pip install -r requirements.txt
+    iris stop IRIS quietly
 
-# not working with virtual env right now
-# RUN python3 -m venv .venv && \
-#    . .venv/bin/activate && \
-#    pip install -r requirements.txt
+
+# dbt setup
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
+
+COPY src/dbt/profiles.yml /home/irisowner/.dbt/profiles.yml
+COPY src/dbt/ dbt/
+
+
+# ensure dbt and data folders are writable
+USER root
+RUN chown -R ${ISC_PACKAGE_MGRUSER}:${ISC_PACKAGE_IRISGROUP} /opt/irisbuild 
+USER ${ISC_PACKAGE_MGRUSER}
