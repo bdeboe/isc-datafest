@@ -1,0 +1,12 @@
+isc-datafest:
+  target: dev
+  outputs:
+    dev:
+      type: iris
+      host: localhost
+      port: 41773
+      user: _SYSTEM
+      pass: SYS
+      namespace: USER
+      schema: demo_files
+      threads: 10
