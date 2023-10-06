@@ -79,9 +79,11 @@ For this model, we'll use the new Time Series modeling capability in InterSystem
 ```SQL
 SET ML CONFIGURATION %AutoML;
 
-CREATE TIME SERIES MODEL walmart PREDICTING (*) BY (sell_date) FROM dbt_forecast.summarize USING { "Forward": 5 }
+CREATE TIME SERIES MODEL walmart PREDICTING (*) BY (sell_date) FROM dbt_forecast.summarize USING { "Forward": 5 };
 
 TRAIN MODEL walmart;
+
+SELECT WITH PREDICTIONS (walmart) %ID, * FROM dbt_forecast.summarize;
 ```
 
 ```SQL
