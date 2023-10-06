@@ -28,6 +28,9 @@ clean-targets:         # directories to be removed by `dbt clean`
 # files using the `{{ config(...) }}` macro.
 models:
   datafest:
-    # Config indicated by + and applies to all files under models/example/
-    example:
-      +materialized: view
+    forecast:
+      +schema: forecast
+      +materialized: table
+    starify:
+      +schema: star
+      +materialized: table

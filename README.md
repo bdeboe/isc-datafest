@@ -48,6 +48,12 @@ CALL bdb_sql.CreateForeignTables('/opt/irisbuild/data/*.csv', '{ "verbose":1, "t
 
 Never heard of [dbt](http://getdbt.com)? It's the T in ELT (and if you haven't heard of that either, you're missing out!)
 
+We'll use dbt to transform the `data/walmart.csv` file into a star schema for BI-style use cases, as well as a flattened file that's a good for data science and Time Series modeling in particular. Navigate to the `dbt/datafest/` folder and run the following:
+
+```Shell
+dbt run
+```
+
 
 ### Building models with IntegratedML
 
@@ -73,7 +79,7 @@ For this model, we'll use the new Time Series modeling capability in InterSystem
 ```SQL
 SET ML CONFIGURATION %AutoML;
 
-CREATE TIME SERIES MODEL walmart PREDICTING (units_sold, sell_price) BY (dt) FROM demo_files.walmart;
+CREATE TIME SERIES MODEL walmart PREDICTING (*) BY (sell_date) FROM dbt_forecast.summarize USING { "Forward": 5 }
 
 TRAIN MODEL walmart;
 ```

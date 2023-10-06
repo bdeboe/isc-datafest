@@ -1,0 +1,7 @@
+version: 2
+
+sources:
+  - name: files
+    schema: demo_files
+    tables:
+      - name: walmart

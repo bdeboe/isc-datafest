@@ -1,6 +1,0 @@
-
-{{ config(materialized='table') }}
-
-SELECT 
-        CAST(OBSDATE AS DATE) AS OBSDATE, HUMIDITY, PRESSURE, TEMPERATURECEL, TEMPERATUREFAR, WINDSPEED 
-    FROM delhi
