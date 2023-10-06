@@ -34,3 +34,6 @@ models:
     starify:
       +schema: star
       +materialized: table
+
+vars:
+  pivot-field: CAT_ID
