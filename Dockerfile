@@ -1,4 +1,6 @@
-ARG IMAGE=intersystemsdc/iris-ml-community:preview
+# use 2023.3 Developer Preview if you're adventurous
+# ARG IMAGE=intersystemsdc/iris-ml-community:preview
+ARG IMAGE=intersystemsdc/iris-ml-community:2023.2.0.227.0-zpm
 
 FROM ${IMAGE}
 
