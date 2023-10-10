@@ -30,7 +30,8 @@ COPY src/dbt/profiles.yml /home/irisowner/.dbt/profiles.yml
 COPY src/dbt/ dbt/
 
 
-# ensure dbt and data folders are writable
+# ensure dbt and data folders are writable and ready to roll
 USER root
 RUN chown -R ${ISC_PACKAGE_MGRUSER}:${ISC_PACKAGE_IRISGROUP} /opt/irisbuild 
 USER ${ISC_PACKAGE_MGRUSER}
+RUN dbt deps --project-dir ./dbt/datafest/
