@@ -1,8 +1,6 @@
 
 WITH sales_fact AS (
   SELECT
-    -- Add your desired columns from the staging table
-    -- along with the appropriate foreign keys to the dimension tables
     item_dim.id AS item_id,
     cat_dim.id AS cat_id,
     store_dim.id AS store_id,
