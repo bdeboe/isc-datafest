@@ -12,7 +12,7 @@ Best served ice cold!
 To build the image, make sure you are in the repository's root directory (`isc-datafest`) and run the following:
 
 ```Shell
-docker build . --tag iris-datafest
+docker build --tag iris-datafest .
 ```
 or
 ```Shell
@@ -21,8 +21,8 @@ docker-compose build
 
 When the image built succesfully, you can start it using the following command, fine tuning any port mappings or image and container names as you prefer.
 
-```
-docker run -d --name iris-datafest -p 41773:1972 -p 42773:52773 iris-datafest --check-caps false --ISCAgent false
+```Shell
+docker run -d --name iris-datafest -p 41773:1972 -p 42773:52773 -p 8080:8080 iris-datafest --check-caps false --ISCAgent false
 ```
 or (after changing any settings in the `docker-compose.yml` file)
 ```Shell
@@ -53,6 +53,15 @@ We'll use dbt to transform the `data/walmart.csv` file into a star schema for BI
 ```Shell
 dbt run
 ```
+
+To generate and then serve up the documentation for your dbt project, use the `dbt docs` command, after which they are available at [http://localhost:8080/]:
+
+```Shell
+dbt docs generate
+dbt docs serve
+```
+
+To change your dbt project files, you can use `vim` inside the container to edit individual files. It may be nicer though to work on your dbt project from within your host OS. To do this, first install dbt using `pip install dbt-iris` and open the project in your host OS using an IDE such as VS Code. When you do this, please make sure to update the `dbt/profiles.xml` file to use the port exposed by the container (41773) and make sure it is in your `~/.dbt/` folder or refer to it using the `--profiles-dir` argument when using `dbt run` or other commands.
 
 
 ### Building models with IntegratedML

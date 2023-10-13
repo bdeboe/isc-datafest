@@ -9,6 +9,9 @@ USER root
 WORKDIR /opt/irisbuild
 
 RUN python3 -m pip install --upgrade pip 
+RUN apt-get update && apt-get install -y \
+  vim \
+  && rm -rf /var/lib/apt/lists/*
 
 USER ${ISC_PACKAGE_MGRUSER}
 
@@ -27,7 +30,7 @@ COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
 COPY src/dbt/profiles.yml /home/irisowner/.dbt/profiles.yml
-COPY src/dbt/ dbt/
+COPY src/dbt/datafest dbt/datafest
 
 
 # ensure dbt and data folders are writable and ready to roll
