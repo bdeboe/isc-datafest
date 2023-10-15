@@ -50,6 +50,8 @@ CALL bdb_sql.CreateForeignTables('/opt/irisbuild/data/*.csv', '{ "verbose":1, "t
 
 Never heard of [dbt](http://getdbt.com)? It's the T in ELT (and if you haven't heard of that either, you're missing out!)
 
+### MM workshop exrecises
+
 We'll use dbt to transform the `data/walmart.csv` file into a star schema for BI-style use cases, as well as a flattened file that's a good for data science and Time Series modeling in particular. Navigate to the `dbt/datafest/` folder and run the following:
 
 ```Shell
