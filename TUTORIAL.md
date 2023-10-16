@@ -50,13 +50,108 @@ CALL bdb_sql.CreateForeignTables('/opt/irisbuild/data/*.csv', '{ "verbose":1, "t
 
 Never heard of [dbt](http://getdbt.com)? It's the T in ELT (and if you haven't heard of that either, you're missing out!)
 
-### MM workshop exercises
+**Ex 1. We will start by creating a simple model that reads the walmart.csv file to generate it's own table. You need to edit the existing dbt_project.yml in dbt/datafest to add in the addition model (Workshop)**
 
-We'll use dbt to transform the `data/walmart.csv` file into a star schema for BI-style use cases, as well as a flattened file that's a good for data science and Time Series modeling in particular. Navigate to the `dbt/datafest/` folder and run the following:
+dbt_project.yml
+    name: 'datafest'
+    version: '1.0.0'
+    config-version: 2
+    
+    # This setting configures which "profile" dbt uses for this project.
+    profile: 'datafest'
+    
+    # These configurations specify where dbt should look for different types of files.
+    # The `model-paths` config, for example, states that models in this project can be
+    # found in the "models/" directory. You probably won't need to change these!
+    model-paths: ["models"]
+    analysis-paths: ["analyses"]
+    test-paths: ["tests"]
+    seed-paths: ["seeds"]
+    macro-paths: ["macros"]
+    snapshot-paths: ["snapshots"]
+    
+    clean-targets:         # directories to be removed by `dbt clean`
+      - "target"
+      - "dbt_packages"
+    
+    
+    # Configuring models
+    # Full documentation: https://docs.getdbt.com/docs/configuring-models
+    
+    # In this example config, we tell dbt to build all models in the example/
+    # directory as views. These settings can be overridden in the individual model
+    # files using the `{{ config(...) }}` macro.
+    models:
+      datafest:
+        forecast:
+          +schema: forecast
+          +materialized: table
+        starify:
+          +schema: star
+          +materialized: table
+        Workshop:
+          +schema: Workshop
+          +materialized: table
+    vars:
+      pivot-field: CAT_ID
+      StoreId: 'CA_1'
+
+We will now create a directory "Workshop" under /dbt/datafest/model
+
+In thw "Workshop" directory creat a file Walmart.sql with th following contents:
+
+    WITH Walmart AS (
+      SELECT DT,Store_id,Item_id,Units_Sold as "Sales Amount",Sell_price as "Sales Value"
+      FROM {{ source('files', 'walmart') }}
+    )
+    
+    SELECT *
+    FROM Walmart
+
+ Navigate to the `dbt/datafest/` folder and run the following:
 
 ```Shell
 dbt run
 ```
+
+Ex 2 - we will now create an aggregate model. Create a file called WalmartState.sql in /dbt/datafest/model/Workshop with the following contents:
+
+    WITH WalmartState AS (
+      SELECT STATE_ID,CAT_ID,SUM(SELL_PRICE) as "Total Sales"
+      FROM {{ source('files', 'walmart') }}
+      GROUP BY STATE_ID,CAT_ID 
+    )
+    
+    SELECT STATE_ID as State, CAT_ID as "Product Group", "Total Sales"
+    FROM WalmartState
+
+ Navigate to the `dbt/datafest/` folder and run the following:
+
+```Shell
+dbt run
+```
+Ex 3 - we will now work with input variables in our models. Create a file called WalmartStore.sql in /dbt/datafest/model/Workshop with the following contents:
+
+
+
+WITH WalmartStore AS (
+  SELECT Store_id,Item_id,Sell_price
+  FROM {{ source('files', 'walmart') }}
+  WHERE STORE_ID %StartsWith '{{var('StoreId')}}'
+)
+
+SELECT *
+FROM WalmartStore
+
+
+Note that this uses an input variable called StoreId which is defined in dbt_project.yml and defaults to 'CA_1' Modify the parametr below (TX) to whatever you like
+
+```Shell
+dbt run --vars '{"StoreId":TX}' 
+```
+
+
+We'll use dbt to transform the `data/walmart.csv` file into a star schema for BI-style use cases, as well as a flattened file that's a good for data science and Time Series modeling in particular. Navigate to the `dbt/datafest/` folder and run the following:
 
 To generate and then serve up the documentation for your dbt project, use the `dbt docs` command, after which they are available at [http://localhost:8080/]:
 
