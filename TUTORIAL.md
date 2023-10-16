@@ -50,14 +50,16 @@ CALL bdb_sql.CreateForeignTables('/opt/irisbuild/data/*.csv', '{ "verbose":1, "t
 
 Never heard of [dbt](http://getdbt.com)? It's the T in ELT (and if you haven't heard of that either, you're missing out!)
 
-**Ex 1. We will start by creating a simple model that reads the walmart.csv file to generate it's own table. You need to edit the existing dbt_project.yml in dbt/datafest to add in the addition model (Workshop) we also add in an extra variable calld StoreId which we will use in Ex 3.**
+**Ex 1. We will start by creating a simple model that reads the walmart.csv file to generate it's own table. You need to edit the existing dbt_project.yml in dbt/datafest to add in the addition model (Workshop) we also add in an extra variable calld StoreId which we will use later**
 
 You can either modify the files in the container or create one in your host machine and copy over to the container using "docker cp", for example:
 
     docker cp dbt_project.yml e84ccf9d1338:/opt/irisbuild/dbt/datafest/
 
 
-   ** **dbt_project.yml****
+   **dbt_project.yml**
+
+   
     name: 'datafest'
     version: '1.0.0'
     config-version: 2
