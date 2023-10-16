@@ -105,7 +105,7 @@ You can either modify the files in the container or create one in your host mach
 
 We will now create a directory "Workshop" under /dbt/datafest/model
 
-In thw "Workshop" directory creat a file Walmart.sql with th following contents:
+In the "Workshop" directory create a file Walmart.sql with th following contents:
 
     WITH Walmart AS (
       SELECT DT,Store_id,Item_id,Units_Sold as "Sales Amount",Sell_price as "Sales Value"
@@ -122,7 +122,7 @@ dbt run
 ```
 Take a look at the table dbt_Workshop.Walmart
 
-**Ex 2 - we will now create an aggregate model. Create a file called WalmartState.sql in /dbt/datafest/model/Workshop with the following contents:**
+**Ex 2 - We will now create an aggregate model. Create a file called WalmartState.sql in /dbt/datafest/model/Workshop with the following contents:**
 
     WITH WalmartState AS (
       SELECT STATE_ID,CAT_ID,SUM(SELL_PRICE) as "Total Sales"
