@@ -50,9 +50,14 @@ CALL bdb_sql.CreateForeignTables('/opt/irisbuild/data/*.csv', '{ "verbose":1, "t
 
 Never heard of [dbt](http://getdbt.com)? It's the T in ELT (and if you haven't heard of that either, you're missing out!)
 
-**Ex 1. We will start by creating a simple model that reads the walmart.csv file to generate it's own table. You need to edit the existing dbt_project.yml in dbt/datafest to add in the addition model (Workshop)**
+**Ex 1. We will start by creating a simple model that reads the walmart.csv file to generate it's own table. You need to edit the existing dbt_project.yml in dbt/datafest to add in the addition model (Workshop) we also add in an extra variable calld StoreId which we will use in Ex 3.**
 
-dbt_project.yml
+You can either modify the files in the container or create one in your host machine and copy over to the container using "docker cp", for example:
+
+    docker cp dbt_project.yml e84ccf9d1338:/opt/irisbuild/dbt/datafest/
+
+
+   ** **dbt_project.yml****
     name: 'datafest'
     version: '1.0.0'
     config-version: 2
@@ -113,8 +118,9 @@ In thw "Workshop" directory creat a file Walmart.sql with th following contents:
 ```Shell
 dbt run
 ```
+Take a look at the table dbt_Workshop.Walmart
 
-Ex 2 - we will now create an aggregate model. Create a file called WalmartState.sql in /dbt/datafest/model/Workshop with the following contents:
+**Ex 2 - we will now create an aggregate model. Create a file called WalmartState.sql in /dbt/datafest/model/Workshop with the following contents:**
 
     WITH WalmartState AS (
       SELECT STATE_ID,CAT_ID,SUM(SELL_PRICE) as "Total Sales"
@@ -130,8 +136,10 @@ Ex 2 - we will now create an aggregate model. Create a file called WalmartState.
 ```Shell
 dbt run
 ```
-Ex 3 - we will now work with input variables in our models. Create a file called WalmartStore.sql in /dbt/datafest/model/Workshop with the following contents:
 
+Take a look at the table dbt_Workshop.WalmartState
+
+**Ex 3 - we will now work with input variables in our models. Create a file called WalmartStore.sql in /dbt/datafest/model/Workshop with the following contents:**
 
 
 WITH WalmartStore AS (
@@ -144,14 +152,19 @@ SELECT *
 FROM WalmartStore
 
 
-Note that this uses an input variable called StoreId which is defined in dbt_project.yml and defaults to 'CA_1' Modify the parametr below (TX) to whatever you like
+Note that this uses an input variable called StoreId which is defined in dbt_project.yml and defaults to 'CA_1' Modify the parameter below (TX) to whatever you like
 
 ```Shell
 dbt run --vars '{"StoreId":TX}' 
 ```
-
+Take a look at the table dbt_Workshop.WalmartStore
 
 We'll use dbt to transform the `data/walmart.csv` file into a star schema for BI-style use cases, as well as a flattened file that's a good for data science and Time Series modeling in particular. Navigate to the `dbt/datafest/` folder and run the following:
+
+```Shell
+dbt run
+```
+Note that this has alrady been done, but it won't hurt...
 
 To generate and then serve up the documentation for your dbt project, use the `dbt docs` command, after which they are available at [http://localhost:8080/]:
 
