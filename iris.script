@@ -4,6 +4,18 @@ w ##class(Config.MapPackages).Delete("USER","Ens")
 w ##class(Config.MapPackages).Delete("USER","EnsLib")
 w ##class(Config.MapPackages).Delete("USER","EnsPortal")
 w ##class(Config.MapPackages).Delete("USER","CSPX.Dashboard")
+
 zn "USER"
+
 zpm "install bdb-sql-utils"
+
+set gw = ##class(%SQLConnection).%New()
+set gw.Name = "MySelf"
+set gw.URL = "jdbc:IRIS://localhost:1972/USER"
+set gw.driver = "com.intersystems.jdbc.IRISDriver"
+set gw.isJDBC = 1
+set gw.Usr = "_SYSTEM"
+set gw.pwd = $system.Encryption.AESBase64Encode("SYS", "3Mandelbrot!")
+do gw.%Save()
+
 halt

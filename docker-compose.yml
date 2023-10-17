@@ -4,6 +4,7 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
+    container_name: iris-datafest
     command: --check-caps false --ISCAgent false
     restart: always
     hostname: iris

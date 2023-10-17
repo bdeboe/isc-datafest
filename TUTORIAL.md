@@ -7,7 +7,21 @@ Best served ice cold!
 
 ## Overview
 
+In this demonstration, you'll experience a number of key innovations introduced with InterSystems IRIS in recent releases for enhancing our ability to support analytics, data fabric and general lakehouse scenarios. 
+
+You'll see how we can quickly access external data using [Foreign Tables](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GSQL_tables#GSQL_tables_federated), and query it just like any other IRIS SQL table. Foreign Tables are an alternative for copying the data into IRIS using the `LOAD DATA` command, and can be more practical when the data is managed externally and maintaining a copy inside IRIS adds complexity to keep the data current or would be a poor use of storage. As such, it is an essential tool when implementing Data Fabric architectures.
+
+We'll then use our new [dbt adapter](https://www.getdbt.com/) to transform the data into a format that is fit-for-purpose. The [data build tool](https://www.getdbt.com/) is an open source solution that implements the *T* in *ELT* (Extract-Load-Transform). It leaves the *EL* part to other tools that may be very platform-specific and exploit specialized ingestion utilities, and focuses squarely on the transformations. Dbt projects are file-based repositories of simple SQL files with parameters, and therefore empower analyst and other SQL-literate personas to implement complex bulk data transformations in a familiar language. Our dbt support is currently experimental, but we believe it can already benefit many customers looking to transform data from one schema into another for analytics and general data fabric use cases.
+
+In one of the schemas created using dbt, we'll use [Columnar Storage](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GSOD_storage) to ensure top query performance for analytical queries. Columnar Storage is an Advanced Server feature that stores table data using a different global structure and low-level encoding that enables highly efficient query plans and chipset-level optimizations for queries scanning and aggregating vast amounts of data. 
+While this demo may not include the data volumes at which the performance benefits become obvious, other metrics illustrate the IO-level benefits and a reference to a separate high-volume demo is included.
+
+Finally, in another materialization facilitated by dbt, we've organized the data such that is ready for building a forecasting model using the new [IntegratedML](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GIML_Intro) support for such model types. IntegratedML empowers analysts and SQL developers to get started quickly with Machine Learning by offering a simple set of SQL commands to define, train and use ML models without requiring a PhD in data science. This is a quick way to enrich applications and offload true data scientists to increase the overall productivity of the data team.
+
+
 ## Tutorial
+
+This step-by-step guide will walk you through the different parts of the overall demo, and presents a few exercises so you can get hands-on with the various technologies. It assumes basic familiarity with docker to build and run the container image, and with IRIS SQL as the main language used in the exercises.
 
 ### Building and starting the image
 
@@ -31,11 +45,96 @@ or (after changing any settings in the `docker-compose.yml` file)
 docker-compose up
 ```
 
-To log in to the container, use `docker exec -it <container-name> bash`, or use your favourite SQL tool to connect through port 41773.
+To log in to the container, use your favourite SQL tool such as DBeaver to connect through port 41773, or log in to the container and access the SQL Shell directly using the following command:
 
-### Creating the Foreign Tables
+```Shell
+$ docker exec -it iris-datafest bash
+irisowner@iris:/opt/irisbuild$ iris sql iris
+```
 
-Shortcut:
+
+### Accessing external data using Foreign Tables
+
+[Foreign Tables](https://learning.intersystems.com/course/view.php?name=ForeignTables) are an ANSI SQL standard capability for projecting external data to SQL. Each Foreign Table is associated with a Foreign Server that groups metadata and credentials for a particular external source, which can be a filesystem directory (to project file-based data) or a remote database (IRIS or third-party). 
+In this tutorial, we'll work with file-based data, so we want to create a Foreign Server representing the `/opt/irisbuild/data/` folder where our demo CSV files are located:
+
+```SQL
+CREATE FOREIGN SERVER datafest.FServer FOREIGN DATA WRAPPER CSV HOST '/opt/irisbuild/data/'
+```
+
+In the previous command, we're referring to a _Foreign Data Wrapper_, which is the "type" of server we'd like to create. The Foreign Tables specification covers a pluggable framework in which FDWs can be thought of as "plugins" that implement how you can access that particular type of server. As of IRIS 2023.3, we support FDWs for CSV and JDBC sources, with ODBC expected in the near future.
+
+With the Foreign Server in place, we can create a Foreign Table for the individual files in the data folder. Take a look at the `delhi.csv` file in the `data/` folder of the repository, either from inside the container using `vim`, or outside of the container with your preferred host OS tool. The file contains historical weather information for the city of Delhi.
+
+```CSV
+OBSDATE,HUMIDITY,PRESSURE,TEMPERATURECEL,TEMPERATUREFAR,WINDSPEED
+2013-1-1 00:00:00,84.5,1015.666667,10,50,0
+2013-1-2 00:00:00,92,1017.8,7.4,45.32,2.98
+2013-1-3 00:00:00,87,1018.666667,7.166666667,44.9,4.633333333
+2013-1-4 00:00:00,71.33333333,1017.166667,8.666666667,47.6,1.233333333
+...
+```
+
+The command to create a Foreign Table is very similar to the the regular `CREATE TABLE` command. You specify the desired table structure through a list of column names and types, and then add a clause that refers to the Foreign Server to project from and the remaining details to identify the specific source for this table, in our case a file. 
+
+Complete the following command and run it to project the file to SQL.
+
+```SQL
+CREATE FOREIGN TABLE datafest.Delhi (
+  OBSDATE TIMESTAMP,
+  HUMIDITY NUMERIC(10,5),
+  ...
+) SERVER ... FILE ...
+  USING { "from" : {"file" : {"header": 1 } } }
+```
+:warning: This `USING` clause may look a little verbose at first, but we're aiming to keep the set of options supported by these two commands 100% consistent, which may include error handling that is specified at the top level of this JSON structure rather than inside the trivial `from.file.*` nesting level. Note also that Foreign Tables, like `LOAD DATA`, is currently limited to dates and timestamps in ODBC format in order to facilitate fast client-side parsing.
+
+If the command is successful, you should be able to query the data just like any other SQL table:
+
+```SQL
+SELECT TOP 10 * FROM datafest.Delhi
+```
+
+Take a look at the query plan (enhanced on 2023.3) using the `EXPLAIN` command. We're querying a simple file-based server, so there isn't much to optimize other than reading the file. When the external data comes from a remote database though, the IRIS SQL optimizer will identify any filter predicates that pertain to the remote table and can be _pushed down_ to that database. For such queries, the query plan will include the exact statement that is sent to the remote database, including any pushed-down predicates in an additional `WHERE` clause.
+
+Now you create additional table projections for the other files in the `data/` folder.
+You can refine your `CREATE FOREIGN TABLE` commands to rename or reorder columns by using the `COLUMNS` and `VALUES` clauses, similar to what you used for `LOAD DATA`. Check the [SQL reference](https://docs.intersystems.com/iris20231/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_createforeigntable) for more details and examples.
+
+#### Cleaning up
+
+If you ran into trouble with any of the previous commands, you can drop individual tables and servers using the corresponding `DROP` commands. To clean up an entire package in one command, use the `DROP SCHEMA` command:
+
+```SQL
+DROP FOREIGN TABLE datafest.Delhi;
+DROP FOREIGN SCHEMA datafest;
+DROP SCHEMA datafest CASCADE;
+```
+
+#### Additional exercise
+
+If you'd like to experiment with a Foreign Table that's based on a remote database, you can mock one up using a JDBC connection to the same IRIS instance we're currently working in (we didn't want to complicate the setup with a second database). JDBC-based Foreign Servers currently work off the same SQL Gateway connections you may have used in the past for programmatic access or in Interoperability productions, and we've included a connection named `MySelf` in the image:
+
+```SQL
+CREATE FOREIGN SERVER datafest.MySelf FOREIGN DATA WRAPPER JDBC CONNECTION 'MySelf'
+```
+
+When creating a table for a remote database, there is actually enough metadata we can scrape from the remote database to build the column list automatically, so if you want your foreign table to mirror the remote one, all you need to run is:
+
+```SQL
+CREATE FOREIGN TABLE datafest.RemoteDelhi SERVER datafest.MySelf TABLE 'datafest.Delhi'
+```
+
+Note that in the previous commands, we're using (quoted) literals for the remote table name, as the remote server may use a different type of identifiers.
+
+Play around with these tables and the `EXPLAIN` command to see how predicates can be pushed down to the remote server.
+
+
+#### Cheat Sheet
+
+If you managed to complete all the above steps successfully, congratulations! Just to make sure we start from a common base in the next part of the tutorial, you can run the following utility to generate Foreign Tables in exactly the structure dbt expects in a new `demo_files` schema. 
+
+If you feel adventurous, feel free to skip this shortcut and go into your dbt project to change all references to the source tables' schema to `datafest`.
+
 ```ObjectScript
 do ##class(bdb.sql.InferSchema).CreateForeignTables("/opt/irisbuild/data/*.csv", { "verbose":1, "targetSchema":"demo_files" })
 ```
@@ -45,6 +144,16 @@ or
 ```SQL
 CALL bdb_sql.CreateForeignTables('/opt/irisbuild/data/*.csv', '{ "verbose":1, "targetSchema":"demo_files" }')
 ```
+
+#### References
+
+If you'd like to learn more about Foreign Tables, feel free to check out the following resources:
+* [Online Learning video on Foreign Tables](https://learning.intersystems.com/course/view.php?name=ForeignTables)
+* Michael Golden's [Foreign Table demo repository](https://github.com/mgoldenisc/isc-resort-demo)
+* IRIS SQL [product documentation on Foreign Tables](https://docs.intersystems.com/iris20231/csp/docbook/DocBook.UI.Page.cls?KEY=GSQL_tables#GSQL_tables_foreign) and reference pages for [`CREATE FOREIGN SERVER`](https://docs.intersystems.com/iris20231/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_createserver) and [`CREATE FOREIGN TABLE`](https://docs.intersystems.com/iris20231/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_createforeigntable)
+
+Please note that Foreign Tables is still labelled as an experimental feature in InterSystems IRIS 2023.3 as we still plan a number of enhancements, including better feature parity with `LOAD DATA`. 
+
 
 ### Working with dbt
 
