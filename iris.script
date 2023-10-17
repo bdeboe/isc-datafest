@@ -15,7 +15,8 @@ set gw.URL = "jdbc:IRIS://localhost:1972/USER"
 set gw.driver = "com.intersystems.jdbc.IRISDriver"
 set gw.isJDBC = 1
 set gw.Usr = "_SYSTEM"
-set gw.pwd = $system.Encryption.AESBase64Encode("SYS", "3Mandelbrot!")
+set gw.pwd = $$pp^%apiGTW("SYS")
+do gw.setEncode(0)
 do gw.%Save()
 
 halt
