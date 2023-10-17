@@ -50,7 +50,7 @@ CALL bdb_sql.CreateForeignTables('/opt/irisbuild/data/*.csv', '{ "verbose":1, "t
 
 Never heard of [dbt](http://getdbt.com)? It's the T in ELT (and if you haven't heard of that either, you're missing out!)
 
-**Ex 1. We will start by creating a simple model that reads the walmart.csv file to generate it's own table. You need to edit the existing dbt_project.yml in dbt/datafest to add in the addition model (Workshop) we also add in an extra variable calld StoreId which we will use later**
+**Ex 1. We will start by creating a simple model that reads the walmart.csv file to generate it's own table. You need to edit the existing dbt_project.yml in dbt/datafest to add in the addition model (Workshop) we also add in an extra variable called StoreId which we will use later**
 
 You can either modify the files in the container or create one in your host machine and copy over to the container using "docker cp", for example:
 
@@ -105,7 +105,7 @@ You can either modify the files in the container or create one in your host mach
 
 We will now create a directory "Workshop" under /dbt/datafest/model
 
-In the "Workshop" directory create a file Walmart.sql with th following contents:
+In the "Workshop" directory create a file Walmart.sql with the following contents:
 
     WITH Walmart AS (
       SELECT DT,Store_id,Item_id,Units_Sold as "Sales Amount",Sell_price as "Sales Value"
@@ -144,14 +144,14 @@ Take a look at the table dbt_Workshop.WalmartState
 **Ex 3 - we will now work with input variables in our models. Create a file called WalmartStore.sql in /dbt/datafest/model/Workshop with the following contents:**
 
 
-WITH WalmartStore AS (
-  SELECT Store_id,Item_id,Sell_price
-  FROM {{ source('files', 'walmart') }}
-  WHERE STORE_ID %StartsWith '{{var('StoreId')}}'
-)
-
-SELECT *
-FROM WalmartStore
+    WITH WalmartStore AS (
+      SELECT Store_id,Item_id,Sell_price
+      FROM {{ source('files', 'walmart') }}
+      WHERE STORE_ID %StartsWith '{{var('StoreId')}}'
+    )
+    
+    SELECT *
+    FROM WalmartStore
 
 
 Note that this uses an input variable called StoreId which is defined in dbt_project.yml and defaults to 'CA_1' Modify the parameter below (TX) to whatever you like
