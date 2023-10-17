@@ -154,7 +154,9 @@ Take a look at the table dbt_Workshop.WalmartState
     FROM WalmartStore
 
 
-Note that this uses an input variable called StoreId which is defined in dbt_project.yml and defaults to 'CA_1' Modify the parameter below (TX) to whatever you like
+Note that this uses an input variable called StoreId which is defined in dbt_project.yml and defaults to 'CA_1' Modify the parameter below (TX) to whatever you like.
+
+Navigate to the dbt/datafest/ folder and run the following:
 
 ```Shell
 dbt run --vars '{"StoreId":TX}' 
