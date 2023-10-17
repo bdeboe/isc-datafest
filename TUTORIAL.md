@@ -166,7 +166,7 @@ We'll use dbt to transform the `data/walmart.csv` file into a star schema for BI
 ```Shell
 dbt run
 ```
-Note that this has alrady been done, but it won't hurt...
+Note that this has already been done, but it won't hurt...
 
 To generate and then serve up the documentation for your dbt project, use the `dbt docs` command, after which they are available at [http://localhost:8080/]:
 
