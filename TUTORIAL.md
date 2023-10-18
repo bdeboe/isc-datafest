@@ -52,6 +52,8 @@ $ docker exec -it iris-datafest bash
 irisowner@iris:/opt/irisbuild$ iris sql iris
 ```
 
+:information_source: Starting with IRIS 2023.2, for security reasons we're no longer including a web server in default InterSystems IRIS installations, except for the Community Edition, which is not meant to be used for production deployments anyway. The docker script to build this image starts from the Community Edition, so the SMP is still available at [http://localhost:42773/csp/sys/UtilHome.csp], but we recommend you try using a client such as DBeaver to run SQL commands against the demo image.
+
 
 ### Accessing external data using Foreign Tables
 
@@ -159,15 +161,27 @@ Please note that Foreign Tables is still labelled as an experimental feature in 
 
 Never heard of [dbt](http://getdbt.com)? It's the T in ELT (and if you haven't heard of that either, you're missing out!)
 
-Let's get a dbt project started! create a new directory /opt/irisbuild/dbt/examples
+#### Creating a new project
 
-In order to create the project, move the the newly created directory and run the following
+Let's get a dbt project started!
 
+In order to create the project, move the `dbt/` directory and run the following command:
+
+```Shell
   dbt init
+```
 
-This will give us a sample project in which we will we will create some models.  
+This will give us a sample project in which we will create some models (a "[model](https://docs.getdbt.com/docs/build/models)" in dbt is a simple transformation, expressed as a SQL statement).
 
-**Ex 1. We will start by creating a simple model that reads the walmart.csv file to generate it's own table. You need to edit the existing dbt_project.yml in dbt/examples to add in the  model (Workshop) we also add in an extra variable called StoreId which we will use later**
+After navigating into the folder named after the project you just created through `dbt init`, you can check the directory structure it created using the `ls` command. The simple folder structure with flat files makes it easy to integrate with version control systems. 
+One file is special: `dbt_project.yml` has all the key properties of your project. One of those is the "[profile](https://docs.getdbt.com/docs/core/connect-data-platform/connection-profiles)" to be used when executing the project, which  holds the coordinates and credentials of the target platform. In this demo image, we have put a `profiles.yml` file in the `~/.dbt/` folder where dbt will look by default. All we need to to is make sure our project properties point to the "datafest" profile configured in that file. To achieve this, open `dbt_project.yml` and change the value of the `profile:` setting to `datafest`, save, and exit.
+
+:information_source: To change your dbt project files, you can use `vim` inside the container to edit individual files. It may be nicer though to work on your dbt project from within your host OS. To do this, first install dbt using `pip install dbt-iris` and open the project in your host OS using an IDE such as VS Code. When you do this, please make sure to update the `dbt/profiles.xml` file to use the port exposed by the container (41773) and make sure it is in your `~/.dbt/` folder or refer to it using the `--profiles-dir` argument when using `dbt run` or other commands.
+
+
+#### Exercises
+
+**Ex 1. We will start by creating a simple model that reads the walmart.csv file to generate its own table. You need to edit the existing dbt_project.yml in dbt/examples to add in the  model (Workshop) we also add in an extra variable called StoreId which we will use later**
 
 You can either modify the files in the container or create one in your host machine and copy over to the container using "docker cp", for example:
 
@@ -284,7 +298,11 @@ dbt run --vars '{"StoreId":TX}'
 ```
 Take a look at the table dbt_Workshop.WalmartStore
 
-We'll use dbt to transform the `data/walmart.csv` file into a star schema for BI-style use cases, as well as a flattened file that's a good for data science and Time Series modeling in particular. Navigate to the `dbt/datafest/` folder and run the following:
+#### A bigger project
+
+This demo image also contains a fully built-out project that touches on several more advanced dbt capabilities. 
+
+In this project, we'll transform the `data/walmart.csv` file (projected through Foreign Tables we created in the first segment) into a star schema for BI-style use cases, as well as a flattened file that's a good for data science and Time Series modeling in particular. Navigate to the `dbt/datafest/` folder and execute the following command to run the project:
 
 ```Shell
 dbt run
@@ -298,12 +316,14 @@ dbt docs generate
 dbt docs serve
 ```
 
-To change your dbt project files, you can use `vim` inside the container to edit individual files. It may be nicer though to work on your dbt project from within your host OS. To do this, first install dbt using `pip install dbt-iris` and open the project in your host OS using an IDE such as VS Code. When you do this, please make sure to update the `dbt/profiles.xml` file to use the port exposed by the container (41773) and make sure it is in your `~/.dbt/` folder or refer to it using the `--profiles-dir` argument when using `dbt run` or other commands.
+#### References
+
+To learn more about dbt, check out their really nice [documentation](https://docs.getdbt.com/docs/build/projects). 
+
+For a very comprehensive example project, that started from the FHIR SQL Builder, then used dbt to transform that data into an ML-friendly layout, and then uses IntegratedML to build predictive models, check out [this repository](https://github.com/isc-tdyar/iris-fhirsqlbuilder-dbt-integratedml) and the corresponding [Global Summit presentation](https://www.intersystems.com/fhir-to-integratedml-can-you-get-there-from-here-intersystems/).
 
 
 ### Building models with IntegratedML
-
-Starting with IRIS 2023.2, for security reasons we're no longer including a web server in default InterSystems IRIS installations, except for the Community Edition, which is not meant to be used for production deployments anyway. The docker script to build this image starts from the Community Edition, so the SMP is still available at [http://localhost:42773/csp/sys/UtilHome.csp], but we recommend you try using a client such as DBeaver to run SQL commands against the demo image.
 
 
 #### A basic regression model
