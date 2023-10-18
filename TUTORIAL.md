@@ -52,7 +52,7 @@ $ docker exec -it iris-datafest bash
 irisowner@iris:/opt/irisbuild$ iris sql iris
 ```
 
-:information_source: Starting with IRIS 2023.2, for security reasons we're no longer including a web server in default InterSystems IRIS installations, except for the Community Edition, which is not meant to be used for production deployments anyway. The docker script to build this image starts from the Community Edition, so the SMP is still available at [http://localhost:42773/csp/sys/UtilHome.csp], but we recommend you try using a client such as DBeaver to run SQL commands against the demo image.
+:information_source: Starting with IRIS 2023.2, for security reasons we're no longer including a web server in default InterSystems IRIS installations, except for the Community Edition, which is not meant to be used for production deployments anyway. The docker script to build this image starts from the Community Edition, so the SMP is still available at http://localhost:42773/csp/sys/UtilHome.csp, but we recommend you try using a client such as DBeaver to run SQL commands against the demo image.
 
 
 ### Accessing external data using Foreign Tables
@@ -309,7 +309,7 @@ dbt run
 ```
 Note that this has already been done, but it won't hurt...
 
-To generate and then serve up the documentation for your dbt project, use the `dbt docs` command, after which they are available at [http://localhost:8080/]:
+To generate and then serve up the documentation for your dbt project, use the `dbt docs` command, after which they are available at http://localhost:8080/:
 
 ```Shell
 dbt docs generate
