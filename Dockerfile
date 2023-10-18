@@ -11,6 +11,7 @@ WORKDIR /opt/irisbuild
 RUN python3 -m pip install --upgrade pip 
 RUN apt-get update && apt-get install -y \
   vim \
+  nano \
   && rm -rf /var/lib/apt/lists/*
 
 USER ${ISC_PACKAGE_MGRUSER}
