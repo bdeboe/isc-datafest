@@ -159,7 +159,15 @@ Please note that Foreign Tables is still labelled as an experimental feature in 
 
 Never heard of [dbt](http://getdbt.com)? It's the T in ELT (and if you haven't heard of that either, you're missing out!)
 
-**Ex 1. We will start by creating a simple model that reads the walmart.csv file to generate it's own table. You need to edit the existing dbt_project.yml in dbt/datafest to add in the addition model (Workshop) we also add in an extra variable called StoreId which we will use later**
+Let's get a dbt project started! create a new directory /opt/irisbuild/dbt/examples
+
+In order to create the project, move the the newly created directory and run the following
+
+  dbt init
+
+This will give us a sample project in which we will we will create some models.  
+
+**Ex 1. We will start by creating a simple model that reads the walmart.csv file to generate it's own table. You need to edit the existing dbt_project.yml in dbt/examples to add in the  model (Workshop) we also add in an extra variable called StoreId which we will use later**
 
 You can either modify the files in the container or create one in your host machine and copy over to the container using "docker cp", for example:
 
@@ -199,20 +207,13 @@ You can either modify the files in the container or create one in your host mach
     # files using the `{{ config(...) }}` macro.
     models:
       datafest:
-        forecast:
-          +schema: forecast
-          +materialized: table
-        starify:
-          +schema: star
-          +materialized: table
         Workshop:
           +schema: Workshop
           +materialized: table
     vars:
-      pivot-field: CAT_ID
       StoreId: 'CA_1'
 
-We will now create a directory "Workshop" under /dbt/datafest/model
+We will now create a directory "Workshop" under /dbt/examples/model
 
 In the "Workshop" directory create a file Walmart.sql with the following contents:
 
