@@ -213,7 +213,18 @@ You can either modify the files in the container or create one in your host mach
     vars:
       StoreId: 'CA_1'
 
-We will now create a directory "Workshop" under /dbt/examples/model
+MM - we need to define the sources. Create a file called models.yml and place it in the /dbt/examples/models directory
+
+**models.yml**
+
+  version: 2
+  
+  sources:
+    - name: walmart
+      schema: demo_files
+      tables:
+        - name: walmart
+We will now create a directory "Workshop" under /dbt/examples/models
 
 In the "Workshop" directory create a file Walmart.sql with the following contents:
 
