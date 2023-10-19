@@ -235,13 +235,13 @@ We will now create a directory "workshop" under /dbt/exercises/models
 
 In the "workshop" directory create a file Walmart.sql with the following contents:
 
-  WITH Walmart AS (
-    SELECT DT,Store_id,Item_id,Units_Sold as "Sales Amount",Sell_price as "Sales Value"
-    FROM demo_files.walmart
-  )
-  
-  SELECT *
-  FROM Walmart
+    WITH Walmart AS (
+      SELECT DT,Store_id,Item_id,Units_Sold as "Sales Amount",Sell_price as "Sales Value"
+      FROM demo_files.walmart
+    )
+    
+    SELECT *
+    FROM Walmart
 
  Navigate to the `dbt/exercises/` folder and run the following:
 
@@ -252,14 +252,14 @@ Take a look at the table dbt_Workshop.Walmart
 
 **Ex 2 - We will now create an aggregate model. Create a file called WalmartState.sql in /dbt/exercises/models/workshop with the following contents:**
 
-  WITH WalmartState AS (
-    SELECT STATE_ID,CAT_ID,SUM(SELL_PRICE) as "Total Sales"
-    FROM demo_files.walmart
-    GROUP BY STATE_ID,CAT_ID 
-  )
-  
-  SELECT STATE_ID as State, CAT_ID as "Product Group", "Total Sales"
-  FROM WalmartState
+    WITH WalmartState AS (
+      SELECT STATE_ID,CAT_ID,SUM(SELL_PRICE) as "Total Sales"
+      FROM demo_files.walmart
+      GROUP BY STATE_ID,CAT_ID 
+    )
+    
+    SELECT STATE_ID as State, CAT_ID as "Product Group", "Total Sales"
+    FROM WalmartState
 
  Navigate to the `dbt/exercises/` folder and run the following:
 
