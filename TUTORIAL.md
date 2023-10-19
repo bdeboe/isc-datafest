@@ -272,14 +272,14 @@ Take a look at the table dbt_Workshop.WalmartState
 **Ex 3 - we will now work with input variables in our models. Create a file called WalmartStore.sql in /dbt/exercises/models/workshop with the following contents:**
 
 
-  WITH WalmartState AS (
-    SELECT STATE_ID,CAT_ID,SUM(SELL_PRICE) as "Total Sales"
-    FROM demo_files.walmart
-    GROUP BY STATE_ID,CAT_ID 
-  )
-  
-  SELECT STATE_ID as State, CAT_ID as "Product Group", "Total Sales"
-  FROM WalmartState
+    WITH WalmartState AS (
+      SELECT STATE_ID,CAT_ID,SUM(SELL_PRICE) as "Total Sales"
+      FROM demo_files.walmart
+      GROUP BY STATE_ID,CAT_ID 
+    )
+    
+    SELECT STATE_ID as State, CAT_ID as "Product Group", "Total Sales"
+    FROM WalmartState
 
 
 Note that this uses an input variable called StoreId which is defined in dbt_project.yml and defaults to 'CA_1'. Modify the parameter below (TX) to whatever you like.
