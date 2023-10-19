@@ -185,7 +185,7 @@ Alternatively, you can create and or modify the file on your host machine and co
 
 #### Exercises
 
-**Ex 1. We will start by creating a simple model that reads the walmart.csv file to generate its own table. You need to edit the existing dbt_project.yml in dbt/exercises to add in the  model (workshop). We also add in a variable, under the :vars section, called StoreId which we will use later**
+**Ex 1. We will start by creating a simple model that reads the walmart.csv file, through a foreign table, to generate its own table. You need to edit the existing dbt_project.yml in dbt/exercises to add in the  model (workshop). We also add in a variable, under the :vars section, called StoreId which we will use later**
 
 As already mentioned, you can either modify the files in the container or create one in your host machine and copy over to the container using "docker cp", for example:
 
