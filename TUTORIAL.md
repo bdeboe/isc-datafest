@@ -301,6 +301,7 @@ In this project, we'll transform the `data/walmart.csv` file (projected through 
 ```Shell
 dbt run
 ```
+Take a look at the models.yml file in /datafest/models/ where you can see how we can define sources which are then used in models. Also check out some of the models in the two directories, which demonstrate some advanced features, such as the use of the Jinja templates.
 
 To generate and then serve up the documentation for your dbt project, use the `dbt docs` command, after which they are available at http://localhost:8080/:
 
