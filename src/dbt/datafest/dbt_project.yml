@@ -38,8 +38,3 @@ models:
 vars:
   pivot-field: CAT_ID
 
-  split-train-pct: 80
-  split-seed: 1234
-
-  build-model: false
-
