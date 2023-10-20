@@ -1,6 +1,5 @@
-# use 2023.3 Developer Preview if you're adventurous
-# ARG IMAGE=intersystemsdc/iris-ml-community:preview
-ARG IMAGE=intersystemsdc/iris-ml-community:2023.2.0.227.0-zpm
+ARG IMAGE=intersystemsdc/iris-ml-community:preview
+# ARG IMAGE=intersystemsdc/iris-ml-community:2023.2.0.227.0-zpm
 
 FROM ${IMAGE}
 
@@ -16,8 +15,6 @@ RUN apt-get update && apt-get install -y \
 
 USER ${ISC_PACKAGE_MGRUSER}
 
-RUN pip install dbt-iris
-
 # stage data
 COPY data/ /opt/irisbuild/data/
 
@@ -29,8 +26,8 @@ RUN iris start IRIS && \
 
 
 # dbt setup
-# COPY requirements.txt requirements.txt
-# RUN pip install -r requirements.txt
+COPY requirements.txt requirements.txt
+RUN pip install -r requirements.txt
 
 COPY src/dbt/profiles.yml /home/irisowner/.dbt/profiles.yml
 COPY src/dbt/datafest dbt/datafest

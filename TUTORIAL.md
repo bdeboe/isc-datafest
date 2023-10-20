@@ -315,13 +315,10 @@ To learn more about dbt, check out their really nice [documentation](https://doc
 
 For a very comprehensive example project, that started from the FHIR SQL Builder, then used dbt to transform that data into an ML-friendly layout, and then uses IntegratedML to build predictive models, check out [this repository](https://github.com/isc-tdyar/iris-fhirsqlbuilder-dbt-integratedml) and the corresponding [Global Summit presentation](https://www.intersystems.com/fhir-to-integratedml-can-you-get-there-from-here-intersystems/).
 
-### Leveraging Columnar Storage
-
-
 
 ### Building models with IntegratedML
 
-In this last section of the tutorial, we'll use [IntegratedML](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GIML_Intro) to train predictive models based on the datasets we've loaded and transformed in the previous exercises.
+In this section of the tutorial, we'll use [IntegratedML](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GIML_Intro) to train predictive models based on the datasets we've loaded and transformed in the previous exercises.
 
 :information_source: Please pay attention to selecting the right ML provider for the right job to avoid long training times in the following exercises. Note that using `SET ML CONFIGURATION` in the SMP's SQL screen does not help a lot as it only sets the default for your current process, which in the current SMP design is a background process (to support long-running commands) and is gone right after it finishes. In general it is good practice to select the ML provider at the start of your script to avoid surprises.
 
@@ -346,7 +343,7 @@ TRAIN MODEL distance FROM demo.nytaxi_training;
 Now you can test the model using the `PREDICT()` function.
 
 ```SQL
-SELECT TOP 10 trip_distance AS actual_distance, PREDICT(distance) AS predicted_distance FROM demo_files.nytaxi_2020_05;
+SELECT TOP 100 trip_distance AS actual_distance, PREDICT(distance) AS predicted_distance FROM demo_files.nytaxi_2020_05;
 ```
 
 This should yield reasonable predictions, even if you only trained on the smaller dataset. 
@@ -362,7 +359,7 @@ Can you explain what is happening?
 :information_source: Here's a tip:
 
 ```SQL
-SELECT TOP 10 trip_distance AS actual_distance, PREDICT(distance) AS predicted_distance FROM (SELECT %FTID, VendorID, DATEADD("M",-1,tpep_pickup_datetime) AS tpep_pickup_datetime, DATEADD("M",-1,tpep_dropoff_datetime) AS tpep_dropoff_datetime, passenger_count, trip_distance, RatecodeID, store_and_fwd_flag, PULocationID, DOLocationID, payment_type, fare_amount, extra, mta_tax, tip_amount, tolls_amount, improvement_surcharge, total_amount, congestion_surcharge FROM demo_files.nytaxi_2020_06)
+SELECT TOP 10 trip_distance AS actual_distance, PREDICT(distance) AS predicted_distance FROM (SELECT VendorID, DATEADD("M",-1,tpep_pickup_datetime) AS tpep_pickup_datetime, DATEADD("M",-1,tpep_dropoff_datetime) AS tpep_dropoff_datetime, passenger_count, trip_distance, RatecodeID, store_and_fwd_flag, PULocationID, DOLocationID, payment_type, fare_amount, extra, mta_tax, tip_amount, tolls_amount, improvement_surcharge, total_amount, congestion_surcharge FROM demo_files.nytaxi_2020_06)
 ```
 
 How would you address this for real?
@@ -407,3 +404,90 @@ As an advanced exercise, try building a query that shows the predicted values fo
 * Product documentation for [IntegratedML](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GIML_Intro)
 * SQL Reference pages for [`CREATE MODEL`](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_createmodel) and [`SELECT`](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_select), which describe the new syntax
 * [Global Summit presentation](https://www.intersystems.com/integratedml-new-next-intersystems/) introducing Time Series modeling
+
+
+### Leveraging Columnar Storage
+
+As a last section of our tutorial, we'll briefly explore [Columnar Storage](https://learning.intersystems.com/course/view.php?id=2112), an alternative for the classic row-based storage that is most commonly used in and the best fit for transactional applications. However, retrieving data that's stored in a row format can get costly for large analytical queries that need to aggregate data across millions of rows. This is where a column-organized storage structure is more appropriate, and it's available as a fully supported feature of InterSystems IRIS as of 2023.1.
+
+:information_source: In this demo, you may not see the 10x performance improvements we claim in some of our [online learning resources](https://learning.intersystems.com/course/view.php?id=2077), for the very simple reason that this is a small demo with a small dataset. The performance benefits brought by columnar storage get lost in the noise for such small data, requiring at least a few millions of rows to show properly. [This more elaborate demo repository](https://github.com/bdeboe/isc-taxi-demo) loads a much larger dataset and comes with a Python notebook that properly illustrates the gains. In the space of this small-data demo, we'll focus on global references as a metric for the number of IO operations, as the differences for row- and columnar-organized tables will already indicate what to expect at a larger scale.
+
+#### Creating the tables
+
+Let's set up the regular row-organized table, and include a few indices:
+
+```SQL
+CREATE TABLE taxi.row AS 
+  SELECT * FROM demo_files.nytaxi_2020_05 
+    UNION 
+  SELECT * FROM demo_files.nytaxi_2020_06;
+
+CREATE INDEX pickup_time ON taxi.row(tpep_pickup_datetime);
+CREATE BITMAP INDEX passenger_count ON taxi.row(passenger_count);
+CREATE BITMAP INDEX payment_type ON taxi.row(payment_type);
+```
+
+Setting up the columnar-organized table is almost the same, we only need to specify the `STORAGETYPE` and won't need any indices:
+```SQL
+CREATE TABLE taxi.col AS 
+  SELECT * FROM demo_files.nytaxi_2020_05 
+    UNION 
+  SELECT * FROM demo_files.nytaxi_2020_06
+WITH STORAGETYPE = COLUMNAR;
+```
+
+Note the difference in time required to build these two tables and associated indices. Building a columnar table takes more time, but it's not a different order of magnitude. Let's also take a look at the size these two variants take on disk, using the `bdb_sql.TableSize()` query in the SQL utility package that's preloaded on this image:
+
+```SQL
+CALL bdb_sql.TableSize('taxi.row');
+CALL bdb_sql.TableSize('taxi.col');
+```
+
+That ratio should be about the inverse of the load time difference, so that's 1:1 in this row/columnar bake-off :smile:.
+
+
+#### Running a few queries
+
+In this exercise, we'll focus on the number of global references as an indication of the IO cost of a query, and compare query plans. 
+
+:information_source: If you're using a tool to connect to IRIS through JDBC rather than the SQL Shell or SMP (who show this by default), you can use the following crude utility to help track global references, approximately. Just remember to also call it _before_ running the query of interest, especially if you're also running queries several times to avoid cold cache bias.
+```SQL
+CREATE OR REPLACE FUNCTION GloRefs() 
+  RETURNS INTEGER 
+  LANGUAGE OBJECTSCRIPT 
+  {  
+    set now = $zu(61,43,$zu(61)) + $SYSTEM.Context.WorkMgr().GlobalReferences
+    set since = now - $g(^demo.grefs), ^demo.grefs = now
+    quit since
+  }
+
+SELECT GloRefs();  -- call it once to set the baseline
+```
+
+:information_source: If, on the other hand, you're using the SQL Shell or the SMP, please make sure to set the [select mode]() to ODBC as we'll be using some date arguments in the following queries. For the SMP, there is a dropdown list right above the query editor. In the SQL Shell, use the following command:
+```
+set selectmode = odbc
+```
+
+:information_source: For looking query plans, the SQL page in the SMP still offers the most convenient rendering, as unfortunately most query tools such as DBeaver will collapse the XML version to a single line that's very hard to read.
+
+Let's start with a simple analytical query, calculating the average total fare for multi-passenger rides in the first two weeks of May:
+
+```SQL
+SELECT AVG(total_amount) 
+  FROM taxi.row
+  WHERE passenger_count > 2 AND tpep_pickup_datetime BETWEEN '2020-05-01' AND '2020-05-14'
+```
+
+First run the query against the `taxi.row` table and then run it against the `taxi.col` data. You may want to run it multiple times to make sure it's a fair comparison and data is cached for both cases. Depending on your hardware, you should see a significant difference in performance, and an even larger difference in the number of global references these two queries take. Now, take a look at the query plans for both queries and identify the differences that may be responsible.
+
+(more to come here)
+
+
+As mentioned at the start of this section, we're only scratching the surface here and the [other demo](https://github.com/bdeboe/isc-taxi-demo), with much more data, offers a more colourful illustration of the benefits of columnar storage.
+
+#### References
+
+* Product documentation on [Columnar Storage](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GSOD_storage)
+* [Global Summit presentation](https://www.intersystems.com/columnar-storage-the-lean-data-warehouse-intersystems/), including customer testimonial
+* [Full New York Taxi demo repository](https://github.com/bdeboe/isc-taxi-demo) 
