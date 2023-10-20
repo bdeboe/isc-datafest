@@ -315,13 +315,21 @@ To learn more about dbt, check out their really nice [documentation](https://doc
 
 For a very comprehensive example project, that started from the FHIR SQL Builder, then used dbt to transform that data into an ML-friendly layout, and then uses IntegratedML to build predictive models, check out [this repository](https://github.com/isc-tdyar/iris-fhirsqlbuilder-dbt-integratedml) and the corresponding [Global Summit presentation](https://www.intersystems.com/fhir-to-integratedml-can-you-get-there-from-here-intersystems/).
 
+### Leveraging Columnar Storage
+
+
 
 ### Building models with IntegratedML
 
+In this last section of the tutorial, we'll use [IntegratedML](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GIML_Intro) to train predictive models based on the datasets we've loaded and transformed in the previous exercises.
+
+:information_source: Please pay attention to selecting the right ML provider for the right job to avoid long training times in the following exercises. Note that using `SET ML CONFIGURATION` in the SMP's SQL screen does not help a lot as it only sets the default for your current process, which in the current SMP design is a background process (to support long-running commands) and is gone right after it finishes. In general it is good practice to select the ML provider at the start of your script to avoid surprises.
 
 #### A basic regression model
 
-This takes very long if you stick with the default ML Provider (AutoML)! Please note that using `SET ML CONFIGURATION` in the SMP's SQL screen does not help a lot as it only sets the default for your current process, which in the current SMP design is a background process (to support long-running commands) and is gone right after it finishes. In general it is good practice to select the ML provider at the start of your script to avoid surprises.
+Let's start with a simple regression model to predict the distance covered in a New York taxi ride, based on the other properties of the ride log in the `data/nytaxi*.csv` files. This is a textbook IntegratedML scenario, so it shouldn't mean anything new for you.
+
+:warning: The following command takes about 3 minutes using the H2O provider on 2023.3. If you are using a different version or provider, training takes significantly longer and you may want to use the second `TRAIN MODEL` command that uses a smaller training dataset.
 
 ```SQL
 SET ML CONFIGURATION %H2O;
@@ -329,11 +337,44 @@ SET ML CONFIGURATION %H2O;
 CREATE MODEL distance PREDICTING (trip_distance) FROM demo_files.nytaxi_2020_05;
 
 TRAIN MODEL distance;
+
+-- for a shorter training time
+CREATE VIEW demo.nytaxi_training AS SELECT TOP 10000 * FROM demo_files.nytaxi_2020_05;
+TRAIN MODEL distance FROM demo.nytaxi_training;
 ```
+
+Now you can test the model using the `PREDICT()` function.
+
+```SQL
+SELECT TOP 10 trip_distance AS actual_distance, PREDICT(distance) AS predicted_distance FROM demo_files.nytaxi_2020_05;
+```
+
+This should yield reasonable predictions, even if you only trained on the smaller dataset. 
+However, we're testing the model against the same data we trained on, which is considered a capital sin by data scientists (luckily they aren't looking :wink:). Let's try on the data for the following month:
+
+```SQL
+SELECT TOP 10 trip_distance AS actual_distance, PREDICT(distance) AS predicted_distance FROM demo_files.nytaxi_2020_05;
+```
+
+Take a look at the quality of these predictions. 
+Can you explain what is happening? 
+
+:information_source: Here's a tip:
+
+```SQL
+SELECT TOP 10 trip_distance AS actual_distance, PREDICT(distance) AS predicted_distance FROM (SELECT %FTID, VendorID, DATEADD("M",-1,tpep_pickup_datetime) AS tpep_pickup_datetime, DATEADD("M",-1,tpep_dropoff_datetime) AS tpep_dropoff_datetime, passenger_count, trip_distance, RatecodeID, store_and_fwd_flag, PULocationID, DOLocationID, payment_type, fare_amount, extra, mta_tax, tip_amount, tolls_amount, improvement_surcharge, total_amount, congestion_surcharge FROM demo_files.nytaxi_2020_06)
+```
+
+How would you address this for real?
+
 
 #### Time Series modeling
 
-For this model, we'll use the new Time Series modeling capability in InterSystems IRIS 2023.2. This technique does not just look at the different attributes of a single observation (row in the training data), but at a window of past observations. Therefore, the training data needs to include a date or timestamp column in order for the algorithm to know how to sort the data and interpret that window. This kind of model is well-suited for forecasting, including when there is some sort of seasonality in the data, such as weekly or monthly patterns that would otherwise not show up.
+For our second model, we'll use the new Time Series modeling capability in InterSystems IRIS 2023.2. This technique does not just look at the different attributes of a single observation (a row in the training dataset), but at a whole window of past observations. Therefore, the training data needs to include a date or timestamp column in order for the algorithm to know how to sort the data and interpret that window. This kind of model is well-suited for forecasting, including when there is some sort of seasonality in the data, such as weekly or monthly patterns that would otherwise not show up in single-row predictions.
+
+:information_source: Time Series modeling is currently only supported with the AutoML provider.
+
+The following commands will start from the walmart dataset we restructured using dbt. If you hadn't completed that exercise, navigate to the `dbt/datafest/` folder and run `dbt run` to make sure the source tables are properly populated.
 
 ```SQL
 SET ML CONFIGURATION %AutoML;
@@ -345,6 +386,10 @@ TRAIN MODEL walmart;
 SELECT WITH PREDICTIONS (walmart) %ID, * FROM dbt_forecast.summarize;
 ```
 
+Note how the `WITH PREDICTIONS (<model-name>)` clause adds rows rather than a column, as we saw in the previous exercise with a classic `PREDICT(<model-name>)` function. You'll notice that these additional rows with predictions (what's in a name!) don't have a RowID, which is how you can recognize them. Experiment with the `Forward` parameter in the `USING` clause (creating a new model) or use a more complicated query in the `FROM` clause to tweak your model.
+
+Here's a second model that predicts the various properties of the Delhi Weather dataset:
+
 ```SQL
 SET ML CONFIGURATION %AutoML;
 
@@ -354,3 +399,11 @@ TRAIN MODEL delhi;
 
 SELECT WITH PREDICTIONS (delhi) * FROM (SELECT TOP 100 %ID, * FROM demo_files.delhi);
 ```
+
+As an advanced exercise, try building a query that shows the predicted values for a given timeframe alongside the actual observed values.
+
+#### References
+
+* Product documentation for [IntegratedML](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GIML_Intro)
+* SQL Reference pages for [`CREATE MODEL`](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_createmodel) and [`SELECT`](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_select), which describe the new syntax
+* [Global Summit presentation](https://www.intersystems.com/integratedml-new-next-intersystems/) introducing Time Series modeling
