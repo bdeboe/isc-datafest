@@ -13,9 +13,9 @@ models:
     columns:
       - name: cat_id
         description: The unique identifier for each category.
-        #tests:
-        #  - not_null
-        # - unique
+        tests:
+        - not_null
+        - unique
       - name: cat_name
         description: The name of the category.
       - name: cat_dept
