@@ -5,3 +5,31 @@ sources:
     schema: demo_files
     tables:
       - name: walmart
+
+models:
+  - name: cat_dim
+    description: >
+      This model is a dimension table that contains the category information
+      for each product.
+    columns:
+      - name: cat_id
+        description: >
+          The unique identifier for each category.
+      - name: cat_name
+        description: >
+          The name of the category.
+      - name: cat_dept
+        description: >
+          The department that the category belongs to.
+      - name: cat_dept_name
+        description: >
+          The name of the department that the category belongs to.
+    tests:
+      - unique:
+          - cat_id
+    tags:
+      - dimension
+      - datafest
+      - walmart
+      - category
+     
