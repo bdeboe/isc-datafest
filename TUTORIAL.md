@@ -353,7 +353,7 @@ This should yield reasonable predictions, even if you only trained on the smalle
 However, we're testing the model against the same data we trained on, which is considered a capital sin by data scientists (luckily they aren't looking :wink:). Let's try on the data for the following month:
 
 ```SQL
-SELECT TOP 10 trip_distance AS actual_distance, PREDICT(distance) AS predicted_distance FROM demo_files.nytaxi_2020_05;
+SELECT TOP 10 trip_distance AS actual_distance, PREDICT(distance) AS predicted_distance FROM demo_files.nytaxi_2020_06;
 ```
 
 Take a look at the quality of these predictions. 
