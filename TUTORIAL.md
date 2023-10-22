@@ -444,7 +444,7 @@ CALL bdb_sql.TableSize('taxi.row');
 CALL bdb_sql.TableSize('taxi.col');
 ```
 
-That ratio should be about the inverse of the load time difference, so that's 1:1 in this row/columnar bake-off :smile:.
+That ratio should be about the inverse of the load time difference, so that's 1:1 in this row/columnar bake-off :wink:.
 
 
 #### Running a few queries
@@ -465,7 +465,7 @@ CREATE OR REPLACE FUNCTION GloRefs()
 SELECT GloRefs();  -- call it once to set the baseline
 ```
 
-:information_source: If, on the other hand, you're using the SQL Shell or the SMP, please make sure to set the [select mode]() to ODBC as we'll be using some date arguments in the following queries. For the SMP, there is a dropdown list right above the query editor. In the SQL Shell, use the following command:
+:information_source: If, on the other hand, you're using the SQL Shell or the SMP, please make sure to set the [select mode](https://docs.intersystems.com/iris20232/csp/docbook/DocBook.UI.Page.cls?KEY=GSQL_shell#GSQL_shell_selectmode) to ODBC as we'll be using some date arguments in the following queries. For the SMP, there is a dropdown list right above the query editor. In the SQL Shell, use the following command:
 ```
 set selectmode = odbc
 ```
@@ -475,15 +475,29 @@ set selectmode = odbc
 Let's start with a simple analytical query, calculating the average total fare for multi-passenger rides in the first two weeks of May:
 
 ```SQL
-SELECT AVG(total_amount) 
-  FROM taxi.row
-  WHERE passenger_count > 2 AND tpep_pickup_datetime BETWEEN '2020-05-01' AND '2020-05-14'
+SELECT 
+  AVG(total_amount) AS avg_fare, 
+  COUNT(*) AS ride_count
+FROM taxi.row
+WHERE passenger_count > 2 
+  AND tpep_pickup_datetime BETWEEN '2020-05-01' AND '2020-05-14'
 ```
 
-First run the query against the `taxi.row` table and then run it against the `taxi.col` data. You may want to run it multiple times to make sure it's a fair comparison and data is cached for both cases. Depending on your hardware, you should see a significant difference in performance, and an even larger difference in the number of global references these two queries take. Now, take a look at the query plans for both queries and identify the differences that may be responsible.
+First run the query against the `taxi.row` table and then run it against the `taxi.col` data. You may want to run it multiple times to make sure it's a fair comparison and data is cached for both cases. Depending on your hardware, you should see a significant difference in performance, and independent of any hardware aspects a much larger difference in the number of global references these two queries take.
 
-(more to come here)
+Now, take a look at the query plans for both queries and identify the differences that may be responsible. You may want to try varying the time window and removing the filter on passenger count to make the differences stand out.
 
+Let's first consider the row-based plan:
+
+![Row-based query plan](/img/plan-row-1.png)
+
+In the row-based query plan, you'll see how the optimizer uses the index on `tpep_pickup_datetime`, because the time window we're considering is highly selective. If you extend the time window, it will combine this index with the bitmap index on `passenger_count` to further minimize the number of master map reads.
+
+:information_source: Note how in 2023.3 we're now showing you the _actual_ query plan used at runtime, based on the query parameter values in the query text.On earlier versions, by default we would show the plan for the generalized statement, with all parameter values parsed out. This new default should make it easier to understand what IRIS SQL is doing, and you can still get the generalized plan by using at least one `?` placeholder instead of parameter values.
+
+![Vectorized query plan](/img/plan-col-1.png)
+
+In the columnar query plan, you'll see a fully _vectorized_ plan, which means the work can get split in small chunks that are executed independently. Note how these chunks make use of efficient vector operations, which will take advantage of chipset level SIMD optimizations.
 
 As mentioned at the start of this section, we're only scratching the surface here and the [other demo](https://github.com/bdeboe/isc-taxi-demo), with much more data, offers a more colourful illustration of the benefits of columnar storage.
 
