@@ -1,5 +1,3 @@
-# WORK IN PROGRESS
-
 # The InterSystems IRIS DataFest Demo
 
 This is the DataFest Demo, mixing the most exciting IRIS data &amp; analytics features from 2023. 
@@ -9,21 +7,42 @@ Best served ice cold!
 
 In this demonstration, you'll experience a number of key innovations introduced with InterSystems IRIS in recent releases for enhancing our ability to support analytics, data fabric and general lakehouse scenarios. 
 
-You'll see how we can quickly access external data using [Foreign Tables](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GSQL_tables#GSQL_tables_federated), and query it just like any other IRIS SQL table. Foreign Tables are an alternative for copying the data into IRIS using the `LOAD DATA` command, and can be more practical when the data is managed externally and maintaining a copy inside IRIS adds complexity to keep the data current or would be a poor use of storage. As such, it is an essential tool when implementing Data Fabric architectures.
+You'll see how we can quickly access external data using [Foreign Tables](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GSQL_tables#GSQL_tables_federated), and query it just like any other IRIS SQL table. Foreign tables are an alternative for copying the data into IRIS using the `LOAD DATA` command, and can be more practical when the data is managed externally, where maintaining a copy inside IRIS adds complexity to keep the data current or would be a poor use of storage. As such, it is an essential tool when implementing Data Fabric architectures.
 
-We'll then use our new [dbt adapter](https://www.getdbt.com/) to transform the data into a format that is fit-for-purpose. The [data build tool](https://www.getdbt.com/) is an open source solution that implements the *T* in *ELT* (Extract-Load-Transform). It leaves the *EL* part to other tools that may be very platform-specific and exploit specialized ingestion utilities, and focuses squarely on the transformations. Dbt projects are file-based repositories of simple SQL files with parameters, and therefore empower analyst and other SQL-literate personas to implement complex bulk data transformations in a familiar language. Our dbt support is currently experimental, but we believe it can already benefit many customers looking to transform data from one schema into another for analytics and general data fabric use cases.
+We'll then use our new [dbt adapter](https://www.getdbt.com/) to transform the data into a format that is fit-for-purpose. The [data build tool](https://www.getdbt.com/) is an open source solution that implements the *T* in *ELT* (Extract-Load-Transform). It leaves the *EL* part to other tools that may be very platform-specific and exploit specialized ingestion utilities, and focuses squarely on the transformations. Dbt projects are file-based repositories of simple SQL files with parameters, and therefore empower data analysts and other SQL-literate personas to implement complex bulk data transformations using a familiar language. Our dbt support is currently experimental, but we believe it can already benefit many customers looking to transform data from one schema into another for analytics and general data fabric use cases.
 
-In one of the schemas created using dbt, we'll use [Columnar Storage](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GSOD_storage) to ensure top query performance for analytical queries. Columnar Storage is an Advanced Server feature that stores table data using a different global structure and low-level encoding that enables highly efficient query plans and chipset-level optimizations for queries scanning and aggregating vast amounts of data. 
-While this demo may not include the data volumes at which the performance benefits become obvious, other metrics illustrate the IO-level benefits and a reference to a separate high-volume demo is included.
+In one of the schemas created using dbt, we've organized the data such that is ready for building a forecasting model using the new [IntegratedML](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GIML_Intro) support for such model types. IntegratedML empowers analysts and SQL developers to get started quickly with Machine Learning by offering a simple set of SQL commands to define, train and use ML models without requiring a PhD in data science. This is a quick way to enrich applications and offload true data scientists to increase the overall productivity of the data team.
 
-Finally, in another materialization facilitated by dbt, we've organized the data such that is ready for building a forecasting model using the new [IntegratedML](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GIML_Intro) support for such model types. IntegratedML empowers analysts and SQL developers to get started quickly with Machine Learning by offering a simple set of SQL commands to define, train and use ML models without requiring a PhD in data science. This is a quick way to enrich applications and offload true data scientists to increase the overall productivity of the data team.
+Finally, we'll demonstrate how [Columnar Storage](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GSOD_storage) ensures top query performance for analytical queries. Columnar Storage is an Advanced Server feature that stores table data using a different global structure and low-level encoding that enables highly efficient query plans and chipset-level optimizations for queries scanning and aggregating vast amounts of data. 
+While this demo only includes a small dataset and the performance benefits are visible but close to the noise level, we'll also look at other metrics that illustrate the IO-level benefits, and a reference to a separate high-volume demo is included.
+
+# Tutorial
+
+This step-by-step guide will walk you through the different parts of the overall demo, and presents a few exercises so you can get hands-on with the various technologies. It assumes basic familiarity with [docker](https://docker.com/) to build and run the container image, and with IRIS SQL as the main language used throughout the exercises.
 
 
-## Tutorial
+- [Building and starting the image](#building-and-starting-the-image)
+- [Accessing external data using Foreign Tables](#accessing-external-data-using-foreign-tables)
+  - [Cleaning up](#cleaning-up)
+  - [Additional exercise](#additional-exercise)
+  - [Cheat Sheet](#cheat-sheet)
+  - [References](#references)
+- [Working with dbt](#working-with-dbt)
+  - [Creating a new project](#creating-a-new-project)
+  - [Exercises](#exercises)
+  - [A bigger project](#a-bigger-project)
+  - [References](#references-1)
+- [Building models with IntegratedML](#building-models-with-integratedml)
+  - [A basic regression model](#a-basic-regression-model)
+  - [Time Series modeling](#time-series-modeling)
+  - [References](#references-2)
+- [Leveraging Columnar Storage](#leveraging-columnar-storage)
+  - [Creating the tables](#creating-the-tables)
+  - [Running a few queries](#running-a-few-queries)
+  - [References](#references-3)
+- [Wrapping up](#wrapping-up)
 
-This step-by-step guide will walk you through the different parts of the overall demo, and presents a few exercises so you can get hands-on with the various technologies. It assumes basic familiarity with docker to build and run the container image, and with IRIS SQL as the main language used in the exercises.
-
-### Building and starting the image
+## Building and starting the image
 
 To build the image, make sure you are in the repository's root directory (`isc-datafest`) and run the following:
 
@@ -35,7 +54,7 @@ or
 docker-compose build
 ```
 
-When the image built succesfully, you can start it using the following command, fine tuning any port mappings or image and container names as you prefer.
+When the image built succesfully, you can launch a container it using the following command, fine tuning any port mappings or image and container names as you prefer.
 
 ```Shell
 docker run -d --name iris-datafest -p 41773:1972 -p 42773:52773 -p 8080:8080 iris-datafest --check-caps false --ISCAgent false
@@ -52,21 +71,21 @@ $ docker exec -it iris-datafest bash
 irisowner@iris:/opt/irisbuild$ iris sql iris
 ```
 
-:information_source: Starting with IRIS 2023.2, for security reasons we're no longer including a web server in default InterSystems IRIS installations, except for the Community Edition, which is not meant to be used for production deployments anyway. The docker script to build this image starts from the Community Edition, so the SMP is still available at http://localhost:42773/csp/sys/UtilHome.csp, but we recommend you try using a client such as DBeaver to run SQL commands against the demo image.
+:information_source: Starting with IRIS 2023.2, for security reasons we're no longer including a web server in default InterSystems IRIS installations, except for the Community Edition, which is not meant to be used for production deployments anyway. The docker script to build this image starts from a Community Edition image, so the SMP is still available at http://localhost:42773/csp/sys/UtilHome.csp, but we recommend you try using a client such as DBeaver to run SQL commands against the demo image.
 
 
-### Accessing external data using Foreign Tables
+## Accessing external data using Foreign Tables
 
-[Foreign Tables](https://learning.intersystems.com/course/view.php?name=ForeignTables) are an ANSI SQL standard capability for projecting external data to SQL. Each Foreign Table is associated with a Foreign Server that groups metadata and credentials for a particular external source, which can be a filesystem directory (to project file-based data) or a remote database (IRIS or third-party). 
-In this tutorial, we'll work with file-based data, so we want to create a Foreign Server representing the `/opt/irisbuild/data/` folder where our demo CSV files are located:
+[Foreign Tables](https://learning.intersystems.com/course/view.php?name=ForeignTables) are an ANSI SQL standard capability for projecting external data to SQL. Each foreign table is associated with a foreign server that groups metadata and credentials for a particular external source, which can be a filesystem directory (to project file-based data) or a remote database (IRIS or third-party). 
+In this tutorial, we'll work with file-based data, so we want to create a foreign server representing the `/opt/irisbuild/data/` folder where our demo CSV files are located:
 
 ```SQL
 CREATE FOREIGN SERVER datafest.FServer FOREIGN DATA WRAPPER CSV HOST '/opt/irisbuild/data/'
 ```
 
-In the previous command, we're referring to a _Foreign Data Wrapper_, which is the "type" of server we'd like to create. The Foreign Tables specification covers a pluggable framework in which FDWs can be thought of as "plugins" that implement how you can access that particular type of server. As of IRIS 2023.3, we support FDWs for CSV and JDBC sources, with ODBC expected in the near future.
+In the previous command, we're referring to a _Foreign Data Wrapper_, which is the "type" of server we'd like to create. The foreign tables specification covers a pluggable framework in which FDWs can be thought of as "plugins" that implement how you can access that particular type of server. As of IRIS 2023.3, we support FDWs for CSV and JDBC sources, with ODBC to become available in the near future.
 
-With the Foreign Server in place, we can create a Foreign Table for the individual files in the data folder. Take a look at the `delhi.csv` file in the `data/` folder of the repository, either from inside the container using `vim`, or outside of the container with your preferred host OS tool. The file contains historical weather information for the city of Delhi.
+With the foreign server in place, we can create a foreign table for the individual files in the data folder. Take a look at the `delhi.csv` file in the `data/` folder of the repository, either from inside the container using `vim`, or outside of the container with your preferred host OS tool. The file contains historical weather information for the city of Delhi.
 
 ```CSV
 OBSDATE,HUMIDITY,PRESSURE,TEMPERATURECEL,TEMPERATUREFAR,WINDSPEED
@@ -77,7 +96,7 @@ OBSDATE,HUMIDITY,PRESSURE,TEMPERATURECEL,TEMPERATUREFAR,WINDSPEED
 ...
 ```
 
-The command to create a Foreign Table is very similar to the the regular `CREATE TABLE` command. You specify the desired table structure through a list of column names and types, and then add a clause that refers to the Foreign Server to project from and the remaining details to identify the specific source for this table, in our case a file. 
+The command to create a foreign table is very similar to the the regular `CREATE TABLE` command. You specify the desired table structure through a list of column names and types, and then add a clause that refers to the foreign server to project from and the remaining details to identify the specific source for this table, in our case a file. 
 
 Complete the following command and run it to project the file to SQL.
 
@@ -89,7 +108,7 @@ CREATE FOREIGN TABLE datafest.Delhi (
 ) SERVER ... FILE ...
   USING { "from" : {"file" : {"header": 1 } } }
 ```
-:warning: This `USING` clause may look a little verbose at first, but we're aiming to keep the set of options supported by these two commands 100% consistent, which may include error handling that is specified at the top level of this JSON structure rather than inside the trivial `from.file.*` nesting level. Note also that Foreign Tables, like `LOAD DATA`, is currently limited to dates and timestamps in ODBC format in order to facilitate fast client-side parsing.
+:warning: This `USING` clause may look a little verbose at first, but we're aiming to keep the set of options supported by foreign tables and the `LOAD DATA` command 100% consistent, which may include error handling that is specified at the top level of this JSON structure rather than inside the trivial `from.file.*` nesting level that looks excessive here. Note also that foreign tables, like `LOAD DATA`, currently require dates and timestamps are specified in ODBC format in order to facilitate fast client-side parsing.
 
 If the command is successful, you should be able to query the data just like any other SQL table:
 
@@ -102,7 +121,7 @@ Take a look at the query plan (enhanced on 2023.3) using the `EXPLAIN` command. 
 Now you create additional table projections for the other files in the `data/` folder.
 You can refine your `CREATE FOREIGN TABLE` commands to rename or reorder columns by using the `COLUMNS` and `VALUES` clauses, similar to what you used for `LOAD DATA`. Check the [SQL reference](https://docs.intersystems.com/iris20231/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_createforeigntable) for more details and examples.
 
-#### Cleaning up
+### Cleaning up
 
 If you ran into trouble with any of the previous commands, you can drop individual tables and servers using the corresponding `DROP` commands. To clean up an entire package in one command, use the `DROP SCHEMA` command:
 
@@ -112,65 +131,63 @@ DROP FOREIGN SCHEMA datafest;
 DROP SCHEMA datafest CASCADE;
 ```
 
-#### Additional exercise
+### Additional exercise
 
-If you'd like to experiment with a Foreign Table that's based on a remote database, you can mock one up using a JDBC connection to the same IRIS instance we're currently working in (we didn't want to complicate the setup with a second database). JDBC-based Foreign Servers currently work off the same SQL Gateway connections you may have used in the past for programmatic access or in Interoperability productions, and we've included a connection named `MySelf` in the image:
+If you'd like to experiment with a foreign table that's based on a remote database, you can mock one up using a JDBC connection to the same IRIS instance we're currently working in (we didn't want to complicate the setup with a second database). JDBC-based foreign servers currently work off the same SQL Gateway connections you may have used in the past for programmatic access or in Interoperability productions, and we've included a connection named `MySelf` in the image we can leverage when creating a foreign server:
 
 ```SQL
 CREATE FOREIGN SERVER datafest.MySelf FOREIGN DATA WRAPPER JDBC CONNECTION 'MySelf'
 ```
 
-When creating a table for a remote database, there is actually enough metadata we can scrape from the remote database to build the column list automatically, so if you want your foreign table to mirror the remote one, all you need to run is:
+When creating a table projecting from a remote database, there is actually enough metadata we can scrape from the remote database to build the column list automatically, so if you want your foreign table to mirror the remote one, all you need to run is:
 
 ```SQL
 CREATE FOREIGN TABLE datafest.RemoteDelhi SERVER datafest.MySelf TABLE 'datafest.Delhi'
 ```
 
-Note that in the previous commands, we're using (quoted) literals for the remote table name, as the remote server may use a different type of identifiers.
+:information_source: Note that in the previous command, we're using (quoted) literals for the remote table name, as the remote server may use a different type of identifiers.
 
 Play around with these tables and the `EXPLAIN` command to see how predicates can be pushed down to the remote server.
 
 
-#### Cheat Sheet
+### Cheat Sheet
 
-If you managed to complete all the above steps successfully, congratulations! Just to make sure we start from a common base in the next part of the tutorial, you can run the following utility to generate Foreign Tables in exactly the structure dbt expects in a new `demo_files` schema. 
+If you managed to complete all the above steps successfully, congratulations! Just to make sure we start from a common base in the next sections of the tutorial, you can run the following utility to generate foreign tables in exactly the structure dbt expects in a new `demo_files` schema. 
 
 If you feel adventurous, feel free to skip this shortcut and go into your dbt project to change all references to the source tables' schema to `datafest`.
 
 ```ObjectScript
 do ##class(bdb.sql.InferSchema).CreateForeignTables("/opt/irisbuild/data/*.csv", { "verbose":1, "targetSchema":"demo_files" })
 ```
-
 or 
-
 ```SQL
 CALL bdb_sql.CreateForeignTables('/opt/irisbuild/data/*.csv', '{ "verbose":1, "targetSchema":"demo_files" }')
 ```
 
-#### References
+### References
 
-If you'd like to learn more about Foreign Tables, feel free to check out the following resources:
-* [Online Learning video on Foreign Tables](https://learning.intersystems.com/course/view.php?name=ForeignTables)
-* Michael Golden's [Foreign Table demo repository](https://github.com/mgoldenisc/isc-resort-demo)
-* IRIS SQL [product documentation on Foreign Tables](https://docs.intersystems.com/iris20231/csp/docbook/DocBook.UI.Page.cls?KEY=GSQL_tables#GSQL_tables_foreign) and reference pages for [`CREATE FOREIGN SERVER`](https://docs.intersystems.com/iris20231/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_createserver) and [`CREATE FOREIGN TABLE`](https://docs.intersystems.com/iris20231/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_createforeigntable)
+If you'd like to learn more about foreign tables, check out the following resources:
+* [Online Learning video on foreign tables](https://learning.intersystems.com/course/view.php?name=ForeignTables)
+* Michael Golden's [foreign table demo repository](https://github.com/mgoldenisc/isc-resort-demo)
+* IRIS SQL [product documentation on foreign tables](https://docs.intersystems.com/iris20231/csp/docbook/DocBook.UI.Page.cls?KEY=GSQL_tables#GSQL_tables_foreign) and reference pages for [`CREATE FOREIGN SERVER`](https://docs.intersystems.com/iris20231/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_createserver) and [`CREATE FOREIGN TABLE`](https://docs.intersystems.com/iris20231/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_createforeigntable)
 
-Please note that Foreign Tables is still labelled as an experimental feature in InterSystems IRIS 2023.3 as we still plan a number of enhancements, including better feature parity with `LOAD DATA`. 
+:information_source: Please note that foreign tables is still labelled as an experimental feature in InterSystems IRIS 2023.3 as we still plan a number of enhancements, including better feature parity with `LOAD DATA`. Please do not hesitate to report any issues or feedback to help us build a great product.
 
 
-### Working with dbt
+## Working with dbt
 
 Never heard of [dbt](http://getdbt.com)? It's the T in ELT (and if you haven't heard of that either, you're missing out!)
 
-#### Creating a new project
+### Creating a new project
 
 Let's get a dbt project started!
 
-In order to create the project, move to the `opt/irisbuild/dbt/` directory and run the following command:
+In order to create the project, navigate to the `opt/irisbuild/dbt/` directory and run the following command:
 
 ```Shell
-  dbt init
+dbt init
 ```
-call the project "exercises" and choose IRIS (1) as the database to be used.
+Name the project "exercises" and choose IRIS (1) as the database to be used.
 
 This will give us a sample project in which we will create some models (a "[model](https://docs.getdbt.com/docs/build/models)" in dbt is a simple transformation, expressed as a SQL statement).
 
@@ -179,18 +196,21 @@ One file is special: `dbt_project.yml` has all the key properties of your projec
 
 :information_source: To change your dbt project files, you can use `vim` inside the container to edit individual files. It may be nicer though to work on your dbt project from within your host OS. To do this, first install dbt using `pip install dbt-iris` and open the project in your host OS using an IDE such as VS Code. When you do this, please make sure to update the `dbt/profiles.xml` file to use the port exposed by the container (41773) and make sure it is in your `~/.dbt/` folder or refer to it using the `--profiles-dir` argument when using `dbt run` or other commands.
 
-Alternatively, you can create and or modify the file on your host machine and copy over to the container using "docker cp", for example:
+Alternatively, you can create and or modify the file on your host machine and copy over to the container using `docker cp`, for example:
 
-    docker cp dbt_project.yml e84ccf9d1338:/opt/irisbuild/dbt/exercises/
+```Shell
+docker cp dbt_project.yml iris-datafest:/opt/irisbuild/dbt/exercises/
+```
 
-#### Exercises
+### Exercises
 
 **Ex 1. We will start by creating a simple model that reads the walmart.csv file, through a foreign table, to generate its own table. You need to edit the existing dbt_project.yml in dbt/exercises to add in the  profile (datafest) and model (workshop). We also add in a variable, under the :vars section, called StoreId which we will use later**
 
 As already mentioned, you can either modify the files in the container or create one in your host machine and copy over to the container using "docker cp", for example:
 
-    docker cp dbt_project.yml e84ccf9d1338:/opt/irisbuild/dbt/exercises/
-
+```Shell
+docker cp dbt_project.yml iris-datafest:/opt/irisbuild/dbt/exercises/
+```
 
    **dbt_project.yml**
 
@@ -231,37 +251,43 @@ As already mentioned, you can either modify the files in the container or create
     vars:
       StoreId: 'CA_1'
     
-We will now create a directory "workshop" under /dbt/exercises/models
+We will now create a directory "workshop" under `dbt/exercises/models`
 
 In the "workshop" directory create a file Walmart.sql with the following contents:
 
-    WITH Walmart AS (
-      SELECT DT,Store_id,Item_id,Units_Sold as "Sales Amount",Sell_price as "Sales Value"
-      FROM demo_files.walmart
-    )
-    
-    SELECT *
-    FROM Walmart
+```SQL
+WITH Walmart AS (
+  SELECT DT,Store_id,Item_id,Units_Sold as "Sales Amount",Sell_price as "Sales Value"
+  FROM demo_files.walmart
+)
 
- Navigate to the `dbt/exercises/` folder and run the following:
+SELECT *
+FROM Walmart
+```
+
+:information_source: Use of the `WITH` clause here is optional, but common practice in dbt. You can just stick with the inner `SELECT` statement and leave out the second `SELECT *`. Note that this syntax (also known as _Common Table Expressions_) is not yet supported in IRIS SQL and specifically catered to in the dbt adapter. Proper server-side support for CTEs is planned with IRIS 2024.1.
+
+Navigate to the `dbt/exercises/` folder and run the following:
 
 ```Shell
 dbt run
 ```
-Take a look at the table dbt_Workshop.Walmart
+Take a look at the table `dbt_Workshop.Walmart`.
 
 **Ex 2 - We will now create an aggregate model. Create a file called WalmartState.sql in /dbt/exercises/models/workshop with the following contents:**
 
-    WITH WalmartState AS (
-      SELECT STATE_ID,CAT_ID,SUM(SELL_PRICE) as "Total Sales"
-      FROM demo_files.walmart
-      GROUP BY STATE_ID,CAT_ID 
-    )
-    
-    SELECT STATE_ID as State, CAT_ID as "Product Group", "Total Sales"
-    FROM WalmartState
+```SQL
+WITH WalmartState AS (
+  SELECT STATE_ID,CAT_ID,SUM(SELL_PRICE) as "Total Sales"
+  FROM demo_files.walmart
+  GROUP BY STATE_ID,CAT_ID 
+)
 
- Navigate to the `dbt/exercises/` folder and run the following:
+SELECT STATE_ID as State, CAT_ID as "Product Group", "Total Sales"
+FROM WalmartState
+```
+
+Navigate to the `dbt/exercises/` folder and run the following:
 
 ```Shell
 dbt run
@@ -272,36 +298,28 @@ Take a look at the table dbt_Workshop.WalmartState
 **Ex 3 - we will now work with input variables in our models. Create a file called WalmartStore.sql in /dbt/exercises/models/workshop with the following contents:**
 
 
-    WITH WalmartStore AS (
-      SELECT Store_id,Item_id,Sell_price
-      FROM demo_files.walmart
-      WHERE STORE_ID %StartsWith '{{var('StoreId')}}'
-    )
-    
-    SELECT *
-    FROM WalmartStore
+```SQL
+WITH WalmartStore AS (
+  SELECT Store_id,Item_id,Sell_price
+  FROM demo_files.walmart
+  WHERE STORE_ID %StartsWith '{{var('StoreId')}}'
+)
+
+SELECT *
+FROM WalmartStore
+```
 
 
+Note that this uses an input variable called StoreId which is defined in `dbt_project.yml` and defaults to 'CA_1'. Modify the parameter below (TX) to whatever you like.
 
-Note that this uses an input variable called StoreId which is defined in dbt_project.yml and defaults to 'CA_1'. Modify the parameter below (TX) to whatever you like.
-
-Navigate to the dbt/exercises/ folder and run the following:
+Navigate to the `dbt/exercises/` folder again and run the following:
 
 ```Shell
 dbt run --vars '{"StoreId":TX}' 
 ```
 Take a look at the table dbt_Workshop.WalmartStore
 
-#### A bigger project
-
-This demo image also contains a fully built-out dbt project that touches on several more advanced dbt capabilities. 
-
-In this project, we'll transform the `data/walmart.csv` file (projected through Foreign Tables we created in the first segment) into a star schema for BI-style use cases, as well as a flattened file that's a good for data science and Time Series modeling in particular. Navigate to the `dbt/datafest/` folder and execute the following command to run the project:
-
-```Shell
-dbt run
-```
-Take a look at the models.yml file in /datafest/models/ where you can see how we can define sources which are then used in models. Also check out some of the models in the two directories, which demonstrate some advanced features, such as the use of the Jinja templates.
+**Ex 4 - to conclude, let's explore how dbt can automatically generate comprehensive project documentation**
 
 To generate and then serve up the documentation for your dbt project, use the `dbt docs` command, after which they are available at http://localhost:8080/:
 
@@ -310,24 +328,42 @@ dbt docs generate
 dbt docs serve
 ```
 
-#### References
+### A bigger project
+
+This demo image also contains a fully built-out dbt project that touches on several more advanced dbt capabilities. 
+
+In this project, we transform the `data/walmart.csv` file (projected through foreign tables we created in the first section of this tutorial) into a star schema for BI-style use cases, as well as a flattened file that's a good for data science and Time Series modeling in particular. Navigate to the `dbt/datafest/` folder and execute the following command to run the project:
+
+```Shell
+dbt run
+```
+Take a look at the `models.yml` file in `dbt/datafest/models/` where you can see how we can define sources which are then used in models. Also check out some of the models in the two directories, which demonstrate some advanced features, such as the use of the Jinja templates (the `{{ .. }}` and `{% .. %}` snippets included in the SQL source files) and dbt's built-in unit tests (look for the `tests:` section in `dbt/datafest/models/models.yml`).
+
+Use the following commands to explore the documentation for this project:
+
+```Shell
+dbt docs generate
+dbt docs serve
+```
+
+### References
 
 To learn more about dbt, check out their really nice [documentation](https://docs.getdbt.com/docs/build/projects). 
 
-For a very comprehensive example project, that started from the FHIR SQL Builder, then used dbt to transform that data into an ML-friendly layout, and then uses IntegratedML to build predictive models, check out [this repository](https://github.com/isc-tdyar/iris-fhirsqlbuilder-dbt-integratedml) and the corresponding [Global Summit presentation](https://www.intersystems.com/fhir-to-integratedml-can-you-get-there-from-here-intersystems/).
+For a _very_ comprehensive example project, that started from the FHIR SQL Builder, then used dbt to transform that data into an ML-friendly layout, and then uses IntegratedML to build predictive models, check out [this repository](https://github.com/isc-tdyar/iris-fhirsqlbuilder-dbt-integratedml) and the corresponding [Global Summit presentation](https://www.intersystems.com/fhir-to-integratedml-can-you-get-there-from-here-intersystems/).
 
 
-### Building models with IntegratedML
+## Building models with IntegratedML
 
 In this section of the tutorial, we'll use [IntegratedML](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GIML_Intro) to train predictive models based on the datasets we've loaded and transformed in the previous exercises.
 
-:information_source: Please pay attention to selecting the right ML provider for the right job to avoid long training times in the following exercises. Note that using `SET ML CONFIGURATION` in the SMP's SQL screen does not help a lot as it only sets the default for your current process, which in the current SMP design is a background process (to support long-running commands) and is gone right after it finishes. In general it is good practice to select the ML provider at the start of your script to avoid surprises.
+:information_source: Please pay attention to selecting the right ML provider for the right job to avoid long training times in the following exercises. Note that using `SET ML CONFIGURATION` in the SMP's SQL screen does not help a lot as it only sets the default for your current process, which in the current SMP design is a background process (to support long-running commands) that will be gone right after it finishes. In general it is good practice to select the ML provider at the start of your script to avoid surprises.
 
-#### A basic regression model
+### A basic regression model
 
-Let's start with a simple regression model to predict the distance covered in a New York taxi ride, based on the other properties of the ride log in the `data/nytaxi*.csv` files. This is a textbook IntegratedML scenario, so it shouldn't mean anything new for you.
+Let's start with a simple regression model to predict the distance covered in a New York taxi ride, based on the other properties of the ride log in the `data/nytaxi*.csv` files. This is a textbook IntegratedML scenario, so it shouldn't be more than a refresher exercise if you've used IntegratedML before.
 
-:warning: The following command takes about 3 minutes using the H2O provider on 2023.3. If you are using a different version or provider, training takes significantly longer and you may want to use the second `TRAIN MODEL` command that uses a smaller training dataset.
+:warning: The following command takes about 2 to3 minutes using the H2O provider on 2023.3. If you are using a different version or provider, training may take significantly longer and you may want to use the second `TRAIN MODEL` command that uses a smaller training dataset.
 
 ```SQL
 SET ML CONFIGURATION %H2O;
@@ -341,7 +377,7 @@ CREATE VIEW demo.nytaxi_training AS SELECT TOP 10000 * FROM demo_files.nytaxi_20
 TRAIN MODEL distance FROM demo.nytaxi_training;
 ```
 
-Now you can test the model using the `PREDICT()` function.
+Now you can test the model using the `PREDICT()` function:
 
 ```SQL
 SELECT TOP 100 trip_distance AS actual_distance, PREDICT(distance) AS predicted_distance FROM demo_files.nytaxi_2020_05;
@@ -365,14 +401,16 @@ SELECT TOP 10 trip_distance AS actual_distance, PREDICT(distance) AS predicted_d
 
 How would you address this for real?
 
+:alert: There appears to be some variability in the quality of the trained model, depending on the random seed used as part of training, and also a late version upgrade since this exercise was first produced seems to have an impact. Please consider this a thorugh exercise if the numbers don't work out as well!
 
-#### Time Series modeling
 
-For our second model, we'll use the new Time Series modeling capability in InterSystems IRIS 2023.2. This technique does not just look at the different attributes of a single observation (a row in the training dataset), but at a whole window of past observations. Therefore, the training data needs to include a date or timestamp column in order for the algorithm to know how to sort the data and interpret that window. This kind of model is well-suited for forecasting, including when there is some sort of seasonality in the data, such as weekly or monthly patterns that would otherwise not show up in single-row predictions.
+### Time Series modeling
+
+For our second model, we'll use the new Time Series modeling capability introduced in InterSystems IRIS 2023.2. This technique does not just look at the different attributes of a single observation (a row in the training dataset), but at a whole window of past observations. Therefore, the training data needs to include a date or timestamp column in order for the algorithm to know how to sort the data and interpret that window. This kind of model is well-suited for forecasting, including when there is some sort of seasonality in the data, such as weekly or monthly patterns that would otherwise not show up in single-row predictions.
 
 :information_source: Time Series modeling is currently only supported with the AutoML provider.
 
-The following commands will start from the walmart dataset we restructured using dbt. If you hadn't completed that exercise, navigate to the `dbt/datafest/` folder and run `dbt run` to make sure the source tables are properly populated.
+The following commands will start from the walmart dataset we restructured using dbt. If you hadn't completed that exercise, navigate to the `dbt/datafest/` folder and use `dbt run` to make sure the source tables are properly populated.
 
 ```SQL
 SET ML CONFIGURATION %AutoML;
@@ -384,7 +422,7 @@ TRAIN MODEL walmart;
 SELECT WITH PREDICTIONS (walmart) %ID, * FROM dbt_forecast.summarize;
 ```
 
-Note how the `WITH PREDICTIONS (<model-name>)` clause adds rows rather than a column, as we saw in the previous exercise with a classic `PREDICT(<model-name>)` function. You'll notice that these additional rows with predictions (what's in a name!) don't have a RowID, which is how you can recognize them. Experiment with the `Forward` parameter in the `USING` clause (creating a new model) or use a more complicated query in the `FROM` clause to tweak your model.
+Note how the `WITH PREDICTIONS (<model-name>)` clause adds rows rather than a column, as we saw in the previous exercise with a classic `PREDICT(<model-name>)` function. You'll notice that these additional rows with predictions (what's in a name!) don't have a RowID, which is how you can recognize them. Experiment with the `Forward` parameter in the `USING` clause (creating a new model) if you'd like a model with a different horizon.
 
 Here's a second model that predicts the various properties of the Delhi Weather dataset:
 
@@ -398,24 +436,35 @@ TRAIN MODEL delhi;
 SELECT WITH PREDICTIONS (delhi) * FROM (SELECT TOP 100 %ID, * FROM demo_files.delhi);
 ```
 
-As an advanced exercise, try building a query that shows the predicted values for a given timeframe alongside the actual observed values.
+As an advanced exercise, try building a query that shows the predicted values for a given timeframe alongside the actual observed values so you can evaluate the model's accuracy. If you're interested in more formal model performance metrics, try the `VALIDATE MODEL` command. 
 
-#### References
+```SQL
+VALIDATE MODEL distance;
+VALIDATE MODEL walmart;
+
+SELECT * FROM INFORMATION_SCHEMA.ML_VALIDATION_METRICS;
+```
+:information_source: Please note validating time series models is computationally expensive and will take several minutes for the `delhi` model. 
+
+A full explanation of the meaning of these metrics is outside the scope of this tutorial, but Wikipedia has great pages on the [MAPE](https://en.wikipedia.org/wiki/Mean_absolute_percentage_error), [RMSE](https://en.wikipedia.org/wiki/Root-mean-square_deviation) and [MdRAE](https://en.wikipedia.org/wiki/Mean_absolute_error) metrics we calculate for time series models.
+
+
+### References
 
 * Product documentation for [IntegratedML](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GIML_Intro)
 * SQL Reference pages for [`CREATE MODEL`](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_createmodel) and [`SELECT`](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_select), which describe the new syntax
 * [Global Summit presentation](https://www.intersystems.com/integratedml-new-next-intersystems/) introducing Time Series modeling
 
 
-### Leveraging Columnar Storage
+## Leveraging Columnar Storage
 
-As a last section of our tutorial, we'll briefly explore [Columnar Storage](https://learning.intersystems.com/course/view.php?id=2112), an alternative for the classic row-based storage that is most commonly used in and the best fit for transactional applications. However, retrieving data that's stored in a row format can get costly for large analytical queries that need to aggregate data across millions of rows. This is where a column-organized storage structure is more appropriate, and it's available as a fully supported feature of InterSystems IRIS as of 2023.1.
+In this last section of our tutorial, we'll briefly explore [Columnar Storage](https://learning.intersystems.com/course/view.php?id=2112), an alternative for the classic row-based storage that is most commonly used in and the best fit for transactional applications. However, retrieving data that's stored in a row format can get costly for large analytical queries that need to aggregate data across millions of rows. This is where a column-organized storage structure is more appropriate, and it's available as a fully supported feature of InterSystems IRIS as of 2023.1.
 
-:information_source: In this demo, you may not see the 10x performance improvements we claim in some of our [online learning resources](https://learning.intersystems.com/course/view.php?id=2077), for the very simple reason that this is a small demo with a small dataset. The performance benefits brought by columnar storage get lost in the noise for such small data, requiring at least a few millions of rows to show properly. [This more elaborate demo repository](https://github.com/bdeboe/isc-taxi-demo) loads a much larger dataset and comes with a Python notebook that properly illustrates the gains. In the space of this small-data demo, we'll focus on global references as a metric for the number of IO operations, as the differences for row- and columnar-organized tables will already indicate what to expect at a larger scale.
+:information_source: In this demo, you may not see the 10x performance improvements we claim in some of our [online learning resources](https://learning.intersystems.com/course/view.php?id=2077), for the very simple reason that this is a small demo with a small dataset. The performance benefits brought by columnar storage get lost in the noise for such small data, requiring at least a few millions of rows to show properly. [This more elaborate demo repository](https://github.com/bdeboe/isc-taxi-demo) loads a much larger dataset and comes with a full-documented Python notebook that properly illustrates the gains. In the space of this small-data demo, we'll focus on global references as a metric for the number of IO operations, as the differences for row- and columnar-organized tables will already indicate what to expect at a larger scale.
 
-#### Creating the tables
+### Creating the tables
 
-Let's set up the regular row-organized table, and include a few indices:
+Let's set up the regular row-organized table first, and include a few indices:
 
 ```SQL
 CREATE TABLE taxi.row AS 
@@ -428,7 +477,7 @@ CREATE BITMAP INDEX passenger_count ON taxi.row(passenger_count);
 CREATE BITMAP INDEX payment_type ON taxi.row(payment_type);
 ```
 
-Setting up the columnar-organized table is almost the same, we only need to specify the `STORAGETYPE` and won't need any indices:
+We can set up the columnar-organized table with the same command; we only need to specify the `STORAGETYPE` and won't need any indices:
 ```SQL
 CREATE TABLE taxi.col AS 
   SELECT * FROM demo_files.nytaxi_2020_05 
@@ -447,7 +496,7 @@ CALL bdb_sql.TableSize('taxi.col');
 That ratio should be about the inverse of the load time difference, so that's 1:1 in this row/columnar bake-off :wink:.
 
 
-#### Running a few queries
+### Running a few queries
 
 In this exercise, we'll focus on the number of global references as an indication of the IO cost of a query, and compare query plans. 
 
@@ -466,13 +515,13 @@ SELECT GloRefs();  -- call it once to set the baseline
 ```
 
 :information_source: If, on the other hand, you're using the SQL Shell or the SMP, please make sure to set the [select mode](https://docs.intersystems.com/iris20232/csp/docbook/DocBook.UI.Page.cls?KEY=GSQL_shell#GSQL_shell_selectmode) to ODBC as we'll be using some date arguments in the following queries. For the SMP, there is a dropdown list right above the query editor. In the SQL Shell, use the following command:
-```
+```SQL
 set selectmode = odbc
 ```
 
 :information_source: For looking query plans, the SQL page in the SMP still offers the most convenient rendering, as unfortunately most query tools such as DBeaver will collapse the XML version to a single line that's very hard to read.
 
-Let's start with a simple analytical query, calculating the average total fare for multi-passenger rides in the first two weeks of May:
+Let's start with a basic analytical query, calculating the average total fare for multi-passenger rides in the first two weeks of May:
 
 ```SQL
 SELECT 
@@ -497,12 +546,16 @@ In the row-based query plan, you'll see how the optimizer uses the index on `tpe
 
 ![Vectorized query plan](/img/plan-col-1.png)
 
-In the columnar query plan, you'll see a fully _vectorized_ plan, which means the work can get split in small chunks that are executed independently. Note how these chunks make use of efficient vector operations, which will take advantage of chipset level SIMD optimizations.
+In the columnar query plan, you'll see a fully _vectorized_ plan, which means the work can be split in small chunks that are executed in parallel using the recently introduced Adaptive Parallel Execution framework. Note how these chunks make use of efficient vector operations, which will take advantage of chipset level SIMD optimizations.
 
 As mentioned at the start of this section, we're only scratching the surface here and the [other demo](https://github.com/bdeboe/isc-taxi-demo), with much more data, offers a more colourful illustration of the benefits of columnar storage.
 
-#### References
+### References
 
 * Product documentation on [Columnar Storage](https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GSOD_storage)
 * [Global Summit presentation](https://www.intersystems.com/columnar-storage-the-lean-data-warehouse-intersystems/), including customer testimonial
 * [Full New York Taxi demo repository](https://github.com/bdeboe/isc-taxi-demo) 
+
+## Wrapping up
+
+That's all folks! If you ran into any issues during this tutorial, please log them on the [GitHub repository](https://github.com/bdeboe/isc-datafest).
