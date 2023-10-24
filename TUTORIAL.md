@@ -247,7 +247,7 @@ docker cp dbt_project.yml iris-datafest:/opt/irisbuild/dbt/exercises/
     # directory as views. These settings can be overridden in the individual model
     # files using the `{{ config(...) }}` macro.
     models:
-      datafest:
+      exercises:
         workshop:
           +schema: workshop
           +materialized: table
