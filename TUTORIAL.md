@@ -204,7 +204,10 @@ docker cp dbt_project.yml iris-datafest:/opt/irisbuild/dbt/exercises/
 
 ### Exercises
 
-**Ex 1. We will start by creating a simple model that reads the walmart.csv file, through a foreign table, to generate its own table. You need to edit the existing dbt_project.yml in dbt/exercises to add in the  profile (datafest) and model (workshop). We also add in a variable, under the :vars section, called StoreId which we will use later**
+#### Exercise 1: a first model 
+
+We will start by creating a simple model that reads the `walmart.csv` file, through a foreign table, to generate its own table. 
+You first need to edit the existing `dbt_project.yml` in `dbt/exercises` to set the profile (datafest) and refine our model (workshop). We also add in a variable, under the `vars:` section, called StoreId which we will use later.
 
 As already mentioned, you can either modify the files in the container or create one in your host machine and copy over to the container using "docker cp", for example:
 
@@ -251,9 +254,9 @@ docker cp dbt_project.yml iris-datafest:/opt/irisbuild/dbt/exercises/
     vars:
       StoreId: 'CA_1'
     
-We will now create a directory "workshop" under `dbt/exercises/models`
+We will now create a directory "workshop" under `dbt/exercises/models`, to make sure our exercise material remains separate from the default examples the `dbt init` command generated. Note how this makes it easy to organize your overall transformations using simple folder structures. If you accidentally or intentionally put the files straight under the `models` folder, note that the `+schema: workshop` configuration won't be applied and your tables will materialize in the default target schema.
 
-In the "workshop" directory create a file Walmart.sql with the following contents:
+In the new `workshop` directory create a file `Walmart.sql` with the following contents:
 
 ```SQL
 WITH Walmart AS (
@@ -267,14 +270,37 @@ FROM Walmart
 
 :information_source: Use of the `WITH` clause here is optional, but common practice in dbt. You can just stick with the inner `SELECT` statement and leave out the second `SELECT *`. Note that this syntax (also known as _Common Table Expressions_) is not yet supported in IRIS SQL and specifically catered to in the dbt adapter. Proper server-side support for CTEs is planned with IRIS 2024.1.
 
-Navigate to the `dbt/exercises/` folder and run the following:
+Navigate to the `dbt/exercises/` folder and execute `dbt run`, after which you should see the following:
 
 ```Shell
-dbt run
+irisowner@iris:/opt/irisbuild/dbt/exercises$ dbt run
+07:03:31  Running with dbt=1.5.8
+07:03:31  Registered adapter: iris=1.5.6
+07:03:31  Unable to do partial parsing because a project config has changed
+07:03:32  Found 3 models, 4 tests, 0 snapshots, 0 analyses, 314 macros, 0 operations, 0 seed files, 0 sources, 0 exposures, 0 metrics, 0 groups
+07:03:32
+07:03:32  Concurrency: 1 threads (target='iris')
+07:03:32
+07:03:32  1 of 3 START sql table model dbt.my_first_dbt_model ............................ [RUN]
+07:03:32  1 of 3 OK created sql table model dbt.my_first_dbt_model ....................... [SUCCESS 2 in 0.39s]
+07:03:32  2 of 3 START sql view model dbt_workshop.Walmart ............................... [RUN]
+07:03:33  2 of 3 OK created sql view model dbt_workshop.Walmart .......................... [SUCCESS 6900 in 0.38s]
+07:03:33  3 of 3 START sql view model dbt.my_second_dbt_model ............................ [RUN]
+07:03:33  3 of 3 OK created sql view model dbt.my_second_dbt_model ....................... [SUCCESS 1 in 0.27s]
+07:03:33
+07:03:33  Finished running 1 table model, 2 view models in 0 hours 0 minutes and 1.21 seconds (1.21s).
+07:03:33
+07:03:33  Completed successfully
+07:03:33
+07:03:33  Done. PASS=3 WARN=0 ERROR=0 SKIP=0 TOTAL=3
 ```
-Take a look at the table `dbt_Workshop.Walmart`.
 
-**Ex 2 - We will now create an aggregate model. Create a file called WalmartState.sql in /dbt/exercises/models/workshop with the following contents:**
+Take a look at the table `dbt_Workshop.Walmart`.
+Can you guess what the numbers right behind "SUCCESS" mean?
+
+#### Exercise 2: adding another model
+
+We will now create an aggregate model. Create a file called `WalmartState.sql` in `dbt/exercises/models/workshop` with the following contents:
 
 ```SQL
 WITH WalmartState AS (
@@ -293,9 +319,11 @@ Navigate to the `dbt/exercises/` folder and run the following:
 dbt run
 ```
 
-Take a look at the table dbt_Workshop.WalmartState
+Take a look at the table `dbt_Workshop.WalmartState`.
 
-**Ex 3 - we will now work with input variables in our models. Create a file called WalmartStore.sql in /dbt/exercises/models/workshop with the following contents:**
+#### Exercise 3: using variables
+
+We will now work with input variables in our models. Create a third file called `WalmartStore.sql` in `dbt/exercises/models/workshop` with the following contents:
 
 
 ```SQL
@@ -310,18 +338,20 @@ FROM WalmartStore
 ```
 
 
-Note that this uses an input variable called StoreId which is defined in `dbt_project.yml` and defaults to 'CA_1'. Modify the parameter below (TX) to whatever you like.
+Note that this uses the input variable called StoreId which is defined in `dbt_project.yml` and defaults to 'CA_1'. Modify the parameter below (TX) to whatever you like.
 
 Navigate to the `dbt/exercises/` folder again and run the following:
 
 ```Shell
 dbt run --vars '{"StoreId":TX}' 
 ```
-Take a look at the table dbt_Workshop.WalmartStore
 
-**Ex 4 - to conclude, let's explore how dbt can automatically generate comprehensive project documentation**
+Take a look at the table `dbt_Workshop.WalmartStore`. Try again with a different parameter value.
 
-To generate and then serve up the documentation for your dbt project, use the `dbt docs` command, after which they are available at http://localhost:8080/:
+
+#### Exercise 4: ~~writing~~ generating documentation 
+
+To conclude, let's explore how dbt can automatically generate comprehensive project documentation. To generate and then serve up the documentation for your dbt project, use the `dbt docs` command from the main project folder `dbt/exercises/`, after which they are available at http://localhost:8080/:
 
 ```Shell
 dbt docs generate
@@ -345,6 +375,8 @@ Use the following commands to explore the documentation for this project:
 dbt docs generate
 dbt docs serve
 ```
+
+:information_source: Note that in this project we'll have models that depend on one another, for which dbt will create good-looking lineage diagrams. Look for the icon on the lower left corner of a model details page.
 
 ### References
 
