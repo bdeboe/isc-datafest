@@ -521,8 +521,8 @@ WITH STORAGETYPE = COLUMNAR;
 Note the difference in time required to build these two tables and associated indices. Building a columnar table takes more time, but it's not a different order of magnitude. Let's also take a look at the size these two variants take on disk, using the `bdb_sql.TableSize()` query in the SQL utility package that's preloaded on this image:
 
 ```SQL
-CALL bdb_sql.TableSize('taxi.row');
-CALL bdb_sql.TableSize('taxi.col');
+SELECT * FROM bdb_sql.TableSize('taxi.row');
+SELECT * FROM bdb_sql.TableSize('taxi.col');
 ```
 
 That ratio should be about the inverse of the load time difference, so that's 1:1 in this row/columnar bake-off :wink:.
